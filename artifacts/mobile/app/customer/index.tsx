@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@/components/icons";
 import * as Haptics from "expo-haptics";
 import * as Location from "expo-location";
 import { LinearGradient } from "expo-linear-gradient";

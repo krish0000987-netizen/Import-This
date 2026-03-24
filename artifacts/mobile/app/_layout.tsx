@@ -55,10 +55,6 @@ export default function RootLayout() {
     Poppins_500Medium,
     Poppins_600SemiBold,
     Poppins_700Bold,
-    ionicons: require("../assets/fonts/Ionicons.ttf"),
-    material: require("../assets/fonts/MaterialIcons.ttf"),
-    "material-community": require("../assets/fonts/MaterialCommunityIcons.ttf"),
-    feather: require("../assets/fonts/Feather.ttf"),
   });
 
   useEffect(() => {
