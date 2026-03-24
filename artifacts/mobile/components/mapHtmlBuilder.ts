@@ -14,7 +14,8 @@ export function buildMapHtml(
   isDark: boolean,
   _token: string,
   gold: string,
-  apiBase: string = ""
+  apiBase: string = "",
+  olaApiKey: string = ""
 ): string {
   const styleUrl = isDark
     ? "https://api.olamaps.io/tiles/vector/v1/styles/default-dark-standard/style.json"
@@ -539,6 +540,7 @@ var GOLD='${gold}';
 var INIT_LAT=${lat},INIT_LNG=${lng},INIT_ZOOM=${zoom};
 var SHOW_USER=${showUser ? "true" : "false"};
 var INIT_MARKERS=${markersJson};
+var OLA_API_KEY='${olaApiKey}';
 
 /* ── Ride type definitions ── */
 var RIDE_TYPES=[
@@ -585,7 +587,7 @@ function calcFare(km, rideId, surge){
   return surge?Math.round(f*SURGE_MULT):f;
 }
 
-/* ── OSM fallback style (no auth needed) ── */
+/* ── OSM fallback style (used only if no Ola API key is available) ── */
 var OSM_STYLE={
   version:8,
   sources:{
@@ -599,54 +601,31 @@ var OSM_STYLE={
   layers:[{id:'osm-layer',type:'raster',source:'osm-tiles',minzoom:0,maxzoom:19}]
 };
 
-/* ── Fetch Ola credentials via backend proxy ── */
-function fetchOlaCreds(cb){
-  if(olaToken||olaApiKey){cb(olaToken,olaApiKey);return;}
-  fetch(API_BASE+'/api/ola/token')
-    .then(function(r){return r.json();})
-    .then(function(d){
-      olaToken=d.token||null;
-      olaApiKey=d.apiKey||null;
-      cb(olaToken,olaApiKey);
-    })
-    .catch(function(){cb(null,null);});
+/* ── Determine initial map style ── */
+olaApiKey=OLA_API_KEY||null;
+var INIT_STYLE=OSM_STYLE;
+if(olaApiKey){
+  var _styleUrl='${styleUrl}';
+  INIT_STYLE=_styleUrl+'?api_key='+olaApiKey;
 }
 
-/* ── Map init ── */
+/* ── Map init — load Ola Maps tiles directly if API key is available ── */
 var map=new maplibregl.Map({
   container:'map',
-  style:OSM_STYLE,
+  style:INIT_STYLE,
   center:[INIT_LNG,INIT_LAT],
   zoom:INIT_ZOOM,
   attributionControl:false,
   transformRequest:function(url,resourceType){
-    if(url.indexOf('api.olamaps.io')>=0){
-      if(olaToken)return{url:url,headers:{Authorization:'Bearer '+olaToken}};
-      if(olaApiKey){
-        var sep=url.indexOf('?')>=0?'&':'?';
-        return{url:url+sep+'api_key='+olaApiKey};
-      }
+    if(url.indexOf('api.olamaps.io')>=0&&olaApiKey){
+      var sep=url.indexOf('?')>=0?'&':'?';
+      return{url:url+sep+'api_key='+olaApiKey};
     }
     return{url:url};
   }
 });
 map.addControl(new maplibregl.AttributionControl({compact:true}),'bottom-right');
 map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
-
-/* Fetch Ola credentials then load style directly — simplest reliable approach */
-fetch(API_BASE+'/api/ola/token')
-  .then(function(r){return r.json();})
-  .then(function(d){
-    var key=d.apiKey||null;
-    var tok=d.token||null;
-    if(!key&&!tok)return; /* no credentials → stay on OSM */
-    olaApiKey=key;
-    olaToken=tok;
-    var styleUrl='${styleUrl}';
-    if(key) styleUrl+=styleUrl.indexOf('?')>=0?'&api_key='+key:'?api_key='+key;
-    map.setStyle(styleUrl);
-  })
-  .catch(function(){}); /* stay on OSM if token fetch fails */
 
 /* ── User dot ── */
 function placeUserDot(lng,lat){

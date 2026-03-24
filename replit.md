@@ -91,6 +91,29 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### `artifacts/mobile` (`@workspace/mobile`)
+
+Expo React Native app — Safar Go outstation taxi booking app from Lucknow, India. Supports customer, driver, and admin roles.
+
+- Entry: `app/_layout.tsx` — fonts, auth context, theme context
+- Routes: `app/auth.tsx`, `app/customer/*`, `app/driver/*`, `app/admin/*`, `app/booking/*`
+- Map: `components/MapWrapper.web.tsx` / `MapWrapper.native.tsx` — renders an Ola Maps iframe (via MapLibre GL JS) for both web and native. `components/mapHtmlBuilder.ts` builds the full map HTML with Ola Maps vector tiles, place autocomplete, directions, and booking UI.
+- The map uses `EXPO_PUBLIC_OLA_API_KEY` env var to initialize Ola Maps tiles directly at load time (no backend fetch needed). Backend API routes at `/api/ola/*` provide search/directions/reverse geocode proxies.
+- Contexts: `DataContext`, `AuthContext`, `ThemeContext`
+- Socket: `services/socketService.ts` stubs for real-time driver assignment
+- Web stub: `stubs/react-native-worklets.web.js` — prevents `react-native-worklets` from crashing on web
+- Metro config: `metro.config.js` intercepts `react-native-worklets` on web platform and redirects to stub
+
+### `artifacts/api-server` Ola Maps Routes
+
+The API server exposes Ola Maps proxy routes at `/api/ola/*`:
+- `GET /api/ola/token` — returns `{ apiKey }` (used as fallback by map HTML)
+- `GET /api/ola/search?q=&lat=&lon=` — proxies Ola Maps place autocomplete
+- `GET /api/ola/directions?origin=lat,lng&destination=lat,lng` — proxies Ola Maps directions (POST internally)
+- `GET /api/ola/reverse?lat=&lon=` — proxies Ola Maps reverse geocode
+
+Ola Maps credentials stored as env vars: `OLA_API_KEY`, `OLA_CLIENT_ID`, `OLA_CLIENT_SECRET`, `EXPO_PUBLIC_OLA_API_KEY`
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.

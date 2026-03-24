@@ -10,6 +10,10 @@ function getApiBase(): string {
   return "http://localhost:5000";
 }
 
+function getOlaApiKey(): string {
+  return process.env.EXPO_PUBLIC_OLA_API_KEY ?? "";
+}
+
 interface AppMapViewProps {
   style?: any;
   initialRegion?: {
@@ -51,10 +55,11 @@ export function AppMapView({
   const latDelta = initialRegion?.latitudeDelta ?? 0.04;
   const zoom = latDelta < 0.01 ? 16 : latDelta < 0.05 ? 13 : 11;
   const apiBase = getApiBase();
+  const olaApiKey = getOlaApiKey();
 
   const initialHtml = useMemo(
-    () => buildMapHtml(lat, lng, zoom, showsUserLocation ?? false, markers, isDark, "", GOLD, apiBase),
-    [lat, lng, zoom, showsUserLocation, isDark, apiBase]
+    () => buildMapHtml(lat, lng, zoom, showsUserLocation ?? false, markers, isDark, "", GOLD, apiBase, olaApiKey),
+    [lat, lng, zoom, showsUserLocation, isDark, apiBase, olaApiKey]
   );
 
   const postMsg = useCallback((msg: object) => {
