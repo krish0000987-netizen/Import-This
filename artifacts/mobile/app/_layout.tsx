@@ -20,7 +20,6 @@ import {
   Poppins_600SemiBold,
   Poppins_700Bold,
 } from "@expo-google-fonts/poppins";
-import { Ionicons, MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -50,9 +49,6 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
-    ...Ionicons.font,
-    ...MaterialIcons.font,
-    ...MaterialCommunityIcons.font,
     PlayfairDisplay_700Bold,
     PlayfairDisplay_600SemiBold,
     Poppins_400Regular,
