@@ -17,6 +17,9 @@ export function buildMapHtml(
   apiBase: string = "",
   olaApiKey: string = ""
 ): string {
+  const mapStylePath = isDark
+    ? "/api/ola/map-style?dark=true"
+    : "/api/ola/map-style";
   const styleUrl = isDark
     ? "https://api.olamaps.io/tiles/vector/v1/styles/default-dark-standard/style.json"
     : "https://api.olamaps.io/tiles/vector/v1/styles/default-light-standard/style.json";
@@ -587,7 +590,7 @@ function calcFare(km, rideId, surge){
   return surge?Math.round(f*SURGE_MULT):f;
 }
 
-/* ── OSM fallback style (used only if no Ola API key is available) ── */
+/* ── OSM fallback style ── */
 var OSM_STYLE={
   version:8,
   sources:{
@@ -600,32 +603,8 @@ var OSM_STYLE={
   },
   layers:[{id:'osm-layer',type:'raster',source:'osm-tiles',minzoom:0,maxzoom:19}]
 };
-
-/* ── Determine initial map style ── */
-olaApiKey=OLA_API_KEY||null;
-var INIT_STYLE=OSM_STYLE;
-if(olaApiKey){
-  var _styleUrl='${styleUrl}';
-  INIT_STYLE=_styleUrl+'?api_key='+olaApiKey;
-}
-
-/* ── Map init — load Ola Maps tiles directly if API key is available ── */
-var map=new maplibregl.Map({
-  container:'map',
-  style:INIT_STYLE,
-  center:[INIT_LNG,INIT_LAT],
-  zoom:INIT_ZOOM,
-  attributionControl:false,
-  transformRequest:function(url,resourceType){
-    if(url.indexOf('api.olamaps.io')>=0&&olaApiKey){
-      var sep=url.indexOf('?')>=0?'&':'?';
-      return{url:url+sep+'api_key='+olaApiKey};
-    }
-    return{url:url};
-  }
-});
-map.addControl(new maplibregl.AttributionControl({compact:true}),'bottom-right');
-map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
+var OLA_STYLE_URL=API_BASE ? API_BASE+'${mapStylePath}' : null;
+var map=null;
 
 /* ── User dot ── */
 function placeUserDot(lng,lat){
@@ -635,25 +614,57 @@ function placeUserDot(lng,lat){
   userMarker=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat([lng,lat]).addTo(map);
 }
 
-map.once('load',function(){
-  if(SHOW_USER){
-    navigator.geolocation&&navigator.geolocation.getCurrentPosition(function(pos){
-      userPos={lat:pos.coords.latitude,lng:pos.coords.longitude};
-      placeUserDot(userPos.lng,userPos.lat);
-      map.flyTo({center:[userPos.lng,userPos.lat],zoom:13,duration:1000});
-      reverseGeocode(userPos.lat,userPos.lng,function(name){
-        if(name&&!pickupText){
-          document.getElementById('inp-pickup').value=name;
-          pickupText=name;pickupCoords={lat:userPos.lat,lng:userPos.lng};
-          updateClearBtns();
-        }
-      });
-    },null,{timeout:7000,enableHighAccuracy:false,maximumAge:60000});
-  }
-  INIT_MARKERS.forEach(addDriverMarker);
-  postToParent({type:'MAP_READY'});
-  updateLocateBtn();
-});
+/* ── Init map — style served via backend proxy (api_key injected server-side) ── */
+function initMap(){
+  var INIT_STYLE=OLA_STYLE_URL||OSM_STYLE;
+  map=new maplibregl.Map({
+    container:'map',
+    style:INIT_STYLE,
+    center:[INIT_LNG,INIT_LAT],
+    zoom:INIT_ZOOM,
+    attributionControl:false,
+    transformRequest:function(url){
+      if(url.indexOf('api.olamaps.io')>=0&&OLA_API_KEY&&url.indexOf('api_key=')<0){
+        var sep=url.indexOf('?')>=0?'&':'?';
+        return{url:url+sep+'api_key='+OLA_API_KEY};
+      }
+      return{url:url};
+    }
+  });
+  map.addControl(new maplibregl.AttributionControl({compact:true}),'bottom-right');
+  map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
+
+  map.once('load',function(){
+    if(SHOW_USER){
+      navigator.geolocation&&navigator.geolocation.getCurrentPosition(function(pos){
+        userPos={lat:pos.coords.latitude,lng:pos.coords.longitude};
+        placeUserDot(userPos.lng,userPos.lat);
+        map.flyTo({center:[userPos.lng,userPos.lat],zoom:13,duration:1000});
+        reverseGeocode(userPos.lat,userPos.lng,function(name){
+          if(name&&!pickupText){
+            document.getElementById('inp-pickup').value=name;
+            pickupText=name;pickupCoords={lat:userPos.lat,lng:userPos.lng};
+            updateClearBtns();
+          }
+        });
+      },null,{timeout:7000,enableHighAccuracy:false,maximumAge:60000});
+    }
+    INIT_MARKERS.forEach(addDriverMarker);
+    postToParent({type:'MAP_READY'});
+    updateLocateBtn();
+  });
+
+  /* ── Map click → reverse geocode ── */
+  map.on('click',function(e){
+    if(!activeField)return;
+    var lat=e.lngLat.lat,lng=e.lngLat.lng;
+    loading(true);
+    reverseGeocode(lat,lng,function(name){
+      loading(false);
+      if(name)selectSugg({name:name,lat:lat,lng:lng,type:'address',sub:'',dist:0},activeField);
+    });
+  });
+}
 
 /* ── Driver markers ── */
 function addDriverMarker(m){
@@ -1158,17 +1169,6 @@ document.getElementById('swap-btn').addEventListener('click',function(){
   else clearRoute();
 });
 
-/* ── Map click → reverse geocode ── */
-map.on('click',function(e){
-  if(!activeField)return;
-  var lat=e.lngLat.lat,lng=e.lngLat.lng;
-  loading(true);
-  reverseGeocode(lat,lng,function(name){
-    loading(false);
-    if(name)selectSugg({name:name,lat:lat,lng:lng,type:'address',sub:'',dist:0},activeField);
-  });
-});
-
 /* ── Locate button ── */
 document.getElementById('locate-btn').addEventListener('click',function(){
   if(userPos){map.flyTo({center:[userPos.lng,userPos.lat],zoom:14,duration:800});}
@@ -1208,6 +1208,9 @@ window.addEventListener('message',function(e){
 /* ── Resize observer ── */
 var ro=new ResizeObserver(function(){updateLocateBtn();});
 ro.observe(document.getElementById('panel'));
+
+/* ── Initialize map (style served via backend proxy, no client-side auth needed) ── */
+initMap();
 })();
 </script>
 </body>

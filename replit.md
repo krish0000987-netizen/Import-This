@@ -98,7 +98,7 @@ Expo React Native app — Safar Go outstation taxi booking app from Lucknow, Ind
 - Entry: `app/_layout.tsx` — fonts, auth context, theme context
 - Routes: `app/auth.tsx`, `app/customer/*`, `app/driver/*`, `app/admin/*`, `app/booking/*`
 - Map: `components/MapWrapper.web.tsx` / `MapWrapper.native.tsx` — renders an Ola Maps iframe (via MapLibre GL JS) for both web and native. `components/mapHtmlBuilder.ts` builds the full map HTML with Ola Maps vector tiles, place autocomplete, directions, and booking UI.
-- The map uses `EXPO_PUBLIC_OLA_API_KEY` env var to initialize Ola Maps tiles directly at load time (no backend fetch needed). Backend API routes at `/api/ola/*` provide search/directions/reverse geocode proxies.
+- Map auth flow: MapLibre fetches style.json from the backend proxy (`/api/ola/map-style`) which rewrites all Ola Maps URLs to include `?api_key=KEY`. A `transformRequest` function appends `?api_key=KEY` to any remaining Ola Maps tile URLs fetched from TileJSON. No Bearer tokens in the browser.
 - Contexts: `DataContext`, `AuthContext`, `ThemeContext`
 - Socket: `services/socketService.ts` stubs for real-time driver assignment
 - Web stub: `stubs/react-native-worklets.web.js` — prevents `react-native-worklets` from crashing on web
@@ -107,7 +107,8 @@ Expo React Native app — Safar Go outstation taxi booking app from Lucknow, Ind
 ### `artifacts/api-server` Ola Maps Routes
 
 The API server exposes Ola Maps proxy routes at `/api/ola/*`:
-- `GET /api/ola/token` — returns `{ apiKey }` (used as fallback by map HTML)
+- `GET /api/ola/token` — fetches an OAuth2 Bearer token from Ola Maps (client_credentials grant) and returns `{ token }`
+- `GET /api/ola/map-style?dark=true|false` — proxies Ola Maps style.json via Bearer auth and rewrites all `api.olamaps.io` URLs to include `?api_key=KEY` so MapLibre can fetch tiles without custom headers (no CORS preflight)
 - `GET /api/ola/search?q=&lat=&lon=` — proxies Ola Maps place autocomplete
 - `GET /api/ola/directions?origin=lat,lng&destination=lat,lng` — proxies Ola Maps directions (POST internally)
 - `GET /api/ola/reverse?lat=&lon=` — proxies Ola Maps reverse geocode

@@ -50,7 +50,60 @@ function withApiKey(url: string): string {
 }
 
 router.get("/ola/token", async (_req, res) => {
-  res.json({ apiKey: OLA_API_KEY || null, token: null });
+  const token = await getAccessToken();
+  res.json({ token: token || null, apiKey: OLA_API_KEY || null });
+});
+
+router.get("/ola/map-style", async (req, res) => {
+  const isDark = req.query.dark === "true";
+  const styleUrl = isDark
+    ? `${OLA_BASE}/tiles/vector/v1/styles/default-dark-standard/style.json`
+    : `${OLA_BASE}/tiles/vector/v1/styles/default-light-standard/style.json`;
+
+  try {
+    const token = await getAccessToken();
+    const headers: Record<string, string> = token
+      ? { Authorization: `Bearer ${token}` }
+      : {};
+
+    const styleRes = await fetch(styleUrl, { headers });
+    if (!styleRes.ok) {
+      res.status(502).json({ error: "Failed to fetch Ola Maps style" });
+      return;
+    }
+
+    const style = (await styleRes.json()) as Record<string, unknown>;
+
+    const apiKey = OLA_API_KEY;
+    function injectApiKey(url: string): string {
+      if (!apiKey || !url.includes("api.olamaps.io")) return url;
+      const sep = url.includes("?") ? "&" : "?";
+      return `${url}${sep}api_key=${apiKey}`;
+    }
+
+    function rewriteStyleUrls(obj: unknown): unknown {
+      if (typeof obj === "string") return injectApiKey(obj);
+      if (Array.isArray(obj)) return obj.map(rewriteStyleUrls);
+      if (obj && typeof obj === "object") {
+        const result: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(obj)) {
+          result[k] = rewriteStyleUrls(v);
+        }
+        return result;
+      }
+      return obj;
+    }
+
+    const rewritten = rewriteStyleUrls(style);
+
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cache-Control", "public, max-age=300");
+    res.json(rewritten);
+  } catch (err) {
+    console.error("[ola/map-style] error:", err);
+    res.status(500).json({ error: "Internal error" });
+  }
 });
 
 router.get("/ola/search", async (req, res) => {
