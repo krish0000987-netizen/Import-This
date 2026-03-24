@@ -1171,13 +1171,18 @@ document.getElementById('swap-btn').addEventListener('click',function(){
 
 /* ── Locate button ── */
 document.getElementById('locate-btn').addEventListener('click',function(){
-  if(userPos){map.flyTo({center:[userPos.lng,userPos.lat],zoom:14,duration:800});}
-  else{
+  if(userPos){
+    map.flyTo({center:[userPos.lng,userPos.lat],zoom:14,duration:800});
+  } else if(typeof window.ReactNativeWebView!=='undefined'){
+    /* On native: geolocation in inline WebView is blocked by Android.
+       Ask the parent app for the user's location instead. */
+    postToParent({type:'REQUEST_LOCATION'});
+  } else {
     navigator.geolocation&&navigator.geolocation.getCurrentPosition(function(pos){
       userPos={lat:pos.coords.latitude,lng:pos.coords.longitude};
       placeUserDot(userPos.lng,userPos.lat);
       map.flyTo({center:[userPos.lng,userPos.lat],zoom:14,duration:800});
-    });
+    },null,{timeout:8000,enableHighAccuracy:false});
   }
 });
 
@@ -1203,6 +1208,23 @@ window.addEventListener('message',function(e){
   if(d.type==='SHOW_ROUTE')drawRoute(d.fromLat,d.fromLng,d.toLat,d.toLng);
   if(d.type==='SET_PICKUP'&&d.name){document.getElementById('inp-pickup').value=d.name;pickupText=d.name;if(d.lat&&d.lng){pickupCoords={lat:d.lat,lng:d.lng};placePickupMarker(d.lat,d.lng);}updateClearBtns();}
   if(d.type==='SET_DEST'&&d.name){document.getElementById('inp-dest').value=d.name;destText=d.name;if(d.lat&&d.lng){destCoords={lat:d.lat,lng:d.lng};placeDestMarker(d.lat,d.lng);}updateClearBtns();if(pickupCoords&&destCoords)drawRoute(pickupCoords.lat,pickupCoords.lng,destCoords.lat,destCoords.lng);}
+  /* Native app pushes user location into the WebView (geolocation API is
+     blocked in inline-HTML WebViews on Android) */
+  if(d.type==='SET_USER_LOCATION'&&d.lat&&d.lng){
+    userPos={lat:d.lat,lng:d.lng};
+    placeUserDot(d.lng,d.lat);
+    if(d.fly!==false)map.flyTo({center:[d.lng,d.lat],zoom:d.zoom||14,duration:800});
+    /* auto-fill pickup with reverse-geocoded name if not already set */
+    if(!pickupText){
+      reverseGeocode(d.lat,d.lng,function(name){
+        if(name&&!pickupText){
+          document.getElementById('inp-pickup').value=name;
+          pickupText=name;pickupCoords={lat:d.lat,lng:d.lng};
+          updateClearBtns();
+        }
+      });
+    }
+  }
 });
 
 /* ── Resize observer ── */

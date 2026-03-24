@@ -1066,6 +1066,7 @@ export default function BookScreen() {
                 showsCompass={false}
                 pickupLabel={pickupLabel}
                 isDark={isDark}
+                userCoordinates={locationDetected && userLocation ? userLocation : undefined}
                 onRouteSelected={(pickup, destination, distanceKm, durationMin, fare, vehicleType) => {
                   router.push({
                     pathname: "/booking/create",

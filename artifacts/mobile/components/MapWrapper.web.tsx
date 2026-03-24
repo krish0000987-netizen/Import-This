@@ -38,6 +38,7 @@ interface AppMapViewProps {
   ) => void;
   pickupLabel?: string;
   isDark?: boolean;
+  userCoordinates?: { latitude: number; longitude: number };
 }
 
 export function AppMapView({

@@ -39,6 +39,7 @@ interface AppMapViewProps {
   ) => void;
   pickupLabel?: string;
   isDark?: boolean;
+  userCoordinates?: { latitude: number; longitude: number };
 }
 
 export function AppMapView({
@@ -49,18 +50,32 @@ export function AppMapView({
   mapRef,
   isDark = false,
   onRouteSelected,
+  userCoordinates,
 }: AppMapViewProps) {
   const webViewRef = useRef<WebView>(null);
+  const apiBase = getApiBase();
+  const olaApiKey = getOlaApiKey();
+
   const lat = initialRegion?.latitude ?? 26.8467;
   const lng = initialRegion?.longitude ?? 80.9462;
   const latDelta = initialRegion?.latitudeDelta ?? 0.04;
   const zoom = latDelta < 0.01 ? 16 : latDelta < 0.05 ? 13 : 11;
-  const apiBase = getApiBase();
-  const olaApiKey = getOlaApiKey();
+
+  const initLat = useRef(lat);
+  const initLng = useRef(lng);
+  const initZoom = useRef(zoom);
+
+  const userCoordsRef = useRef(userCoordinates);
+  useEffect(() => { userCoordsRef.current = userCoordinates; }, [userCoordinates]);
 
   const html = useMemo(
-    () => buildMapHtml(lat, lng, zoom, showsUserLocation ?? false, markers, isDark, "", GOLD, apiBase, olaApiKey),
-    [lat, lng, zoom, showsUserLocation, isDark, apiBase, olaApiKey]
+    () => buildMapHtml(
+      initLat.current, initLng.current, initZoom.current,
+      showsUserLocation ?? false, markers, isDark, "", GOLD, apiBase, olaApiKey
+    ),
+    // Intentionally exclude lat/lng/zoom — initial position only, updates go via SET_USER_LOCATION message
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [showsUserLocation, isDark, apiBase, olaApiKey]
   );
 
   const inject = useCallback((code: string) => {
@@ -92,6 +107,18 @@ export function AppMapView({
     }
   }, [mapRef, postToWebView]);
 
+  useEffect(() => {
+    if (userCoordinates) {
+      postToWebView({
+        type: "SET_USER_LOCATION",
+        lat: userCoordinates.latitude,
+        lng: userCoordinates.longitude,
+        fly: true,
+        zoom: 14,
+      });
+    }
+  }, [userCoordinates, postToWebView]);
+
   const onMessage = useCallback((event: WebViewMessageEvent) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
@@ -106,8 +133,20 @@ export function AppMapView({
           data.rideType || "sedan"
         );
       }
+      if (data.type === "REQUEST_LOCATION") {
+        const coords = userCoordsRef.current;
+        if (coords) {
+          postToWebView({
+            type: "SET_USER_LOCATION",
+            lat: coords.latitude,
+            lng: coords.longitude,
+            fly: true,
+            zoom: 14,
+          });
+        }
+      }
     } catch (_) {}
-  }, [onRouteSelected]);
+  }, [onRouteSelected, postToWebView]);
 
   return (
     <View style={[style, nativeStyles.container]}>
