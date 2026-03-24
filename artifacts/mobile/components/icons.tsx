@@ -20,6 +20,8 @@ import {
   Diamond,
   Download,
   Edit,
+  Eye,
+  EyeOff,
   FileText,
   Flag,
   Heart,
@@ -62,12 +64,18 @@ import {
   XCircle,
   Locate,
   Zap,
-  LucideProps,
 } from "lucide-react-native";
 
-type IconName = string;
+type SvgIconProps = {
+  size?: number;
+  color?: string;
+  strokeWidth?: number;
+  style?: object;
+};
 
-const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
+type SvgIconComponent = React.ComponentType<SvgIconProps>;
+
+const ICON_MAP: Record<string, SvgIconComponent> = {
   add: Plus,
   "alert-circle": AlertCircle,
   "alert-circle-outline": AlertCircle,
@@ -104,6 +112,8 @@ const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
   "document-text": FileText,
   "document-text-outline": FileText,
   "download-outline": Download,
+  "eye-outline": Eye,
+  "eye-off-outline": EyeOff,
   flag: Flag,
   "flag-outline": Flag,
   "flash-outline": Zap,
@@ -142,6 +152,7 @@ const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
   send: Send,
   "share-outline": Share2,
   shield: Shield,
+  "shield-outline": Shield,
   "shield-checkmark": ShieldCheck,
   "shield-checkmark-outline": ShieldCheck,
   star: Star,
@@ -161,7 +172,7 @@ const ICON_MAP: Record<string, React.ComponentType<LucideProps>> = {
 };
 
 type IconComponentProps = {
-  name: IconName;
+  name: string;
   size?: number;
   color?: string;
   style?: object;
