@@ -109,6 +109,7 @@ export function AppMapView({
         style={{ width: "100%", height: "100%", border: "none" } as any}
         title="Safar Go Map"
         sandbox="allow-scripts allow-same-origin"
+        allow="geolocation"
       />
     </View>
   );
