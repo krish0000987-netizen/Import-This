@@ -80,3 +80,15 @@ export function emitDriverReachedPickup(rideId: string) {
 export function emitDriverSubmitOtp(rideId: string, otp: string) {
   if (socket) socket.emit("driverSubmitOtp", { rideId, otp });
 }
+
+// ── Payment Flow ──────────────────────────────────────────────────────────
+
+/** Driver: signal that the trip has ended and payment is required */
+export function emitDriverEndTrip(rideId: string, fare: number) {
+  if (socket) socket.emit("driverEndTrip", { rideId, fare });
+}
+
+/** Customer: notify server that payment was verified successfully */
+export function emitCustomerPaymentDone(rideId: string) {
+  if (socket) socket.emit("customerPaymentDone", { rideId });
+}

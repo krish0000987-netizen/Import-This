@@ -33,13 +33,14 @@ import {
   emitJoinRideRoom,
   emitDriverReachedPickup,
   emitDriverSubmitOtp,
+  emitDriverEndTrip,
 } from "@/services/socketService";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
   : "http://localhost:5000";
 
-type TripStatus = "assigned" | "arrived" | "otp_verify" | "started" | "completed";
+type TripStatus = "assigned" | "arrived" | "otp_verify" | "started" | "awaiting_payment" | "completed";
 
 interface RideDetail {
   rideId: string;
@@ -108,11 +109,26 @@ export default function DriverTripScreen() {
       setOtpError(true);
     });
 
+    // Server confirms driver reached end → awaiting payment
+    socket.on("awaitingPayment", () => {
+      setTripStatus("awaiting_payment");
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    });
+
+    // Customer paid → trip done
+    socket.on("paymentConfirmed", ({ fare: paidFare }: { fare: number; paymentId?: string }) => {
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setTripStatus("completed");
+      setShowSummary(true);
+    });
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
       socket.off("showOtpEntry");
       socket.off("otpVerified");
       socket.off("otpRejected");
+      socket.off("awaitingPayment");
+      socket.off("paymentConfirmed");
     };
   }, [rideId]);
 
@@ -167,21 +183,17 @@ export default function DriverTripScreen() {
   };
 
   const handleEndTrip = () => {
-    Alert.alert("End Trip", "Confirm you've reached the destination?", [
+    Alert.alert("End Trip", "Confirm you've reached the destination?\n\nThe customer will be asked to complete payment online.", [
       { text: "Cancel", style: "cancel" },
       {
-        text: "End Trip",
-        onPress: async () => {
-          try {
-            await fetch(`${API_BASE}/api/rides/${rideId}/status`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ status: "completed" }),
-            });
-          } catch {}
-          if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setTripStatus("completed");
-          setShowSummary(true);
+        text: "End Trip & Request Payment",
+        onPress: () => {
+          const fareNum = ride?.fare ?? 0;
+          // Emit to server — server transitions both sides to payment flow
+          emitDriverEndTrip(rideId, fareNum);
+          // Optimistically update UI; server will confirm via awaitingPayment event
+          setTripStatus("awaiting_payment");
+          if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         },
       },
     ]);
@@ -215,6 +227,7 @@ export default function DriverTripScreen() {
     arrived: { label: "Arrived at Pickup", color: "#F39C12", icon: "location" },
     otp_verify: { label: "Verify OTP", color: Colors.gold, icon: "keypad-outline" },
     started: { label: "Trip in Progress", color: "#2ECC71", icon: "car-sport" },
+    awaiting_payment: { label: "Awaiting Payment", color: Colors.gold, icon: "card-outline" },
     completed: { label: "Trip Completed", color: "#2ECC71", icon: "checkmark-circle" },
   };
 
@@ -489,6 +502,23 @@ export default function DriverTripScreen() {
               </LinearGradient>
             </Pressable>
           )}
+
+          {tripStatus === "awaiting_payment" && (
+            <Animated.View entering={FadeInUp.duration(400)} style={[styles.awaitingPaymentCard, { backgroundColor: Colors.gold + "12", borderColor: Colors.gold + "35" }]}>
+              <View style={[styles.awaitingPaymentIcon, { backgroundColor: Colors.gold + "25" }]}>
+                <Ionicons name="card" size={28} color={Colors.gold} />
+              </View>
+              <Text style={[styles.awaitingPaymentTitle, { color: colors.text }]}>Awaiting Payment</Text>
+              <Text style={[styles.awaitingPaymentSub, { color: colors.textSecondary }]}>
+                The customer has been asked to complete online payment. Please wait a moment.
+              </Text>
+              <View style={styles.awaitingDots}>
+                {[0, 1, 2].map((i) => (
+                  <View key={i} style={[styles.awaitingDot, { backgroundColor: Colors.gold, opacity: 0.5 + i * 0.25 }]} />
+                ))}
+              </View>
+            </Animated.View>
+          )}
         </Animated.View>
       )}
 
@@ -718,6 +748,13 @@ const styles = StyleSheet.create({
   actionBtnWrapper: { borderRadius: 16, overflow: "hidden" },
   actionBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, paddingVertical: 18 },
   actionBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 17, color: "#fff" },
+
+  awaitingPaymentCard: { borderRadius: 18, borderWidth: 1, padding: 22, gap: 10, alignItems: "center", marginTop: 4 },
+  awaitingPaymentIcon: { width: 60, height: 60, borderRadius: 30, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  awaitingPaymentTitle: { fontFamily: "Poppins_700Bold", fontSize: 18 },
+  awaitingPaymentSub: { fontFamily: "Poppins_400Regular", fontSize: 14, textAlign: "center", lineHeight: 20 },
+  awaitingDots: { flexDirection: "row", gap: 8, marginTop: 6 },
+  awaitingDot: { width: 8, height: 8, borderRadius: 4 },
 
   otpOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.65)", justifyContent: "flex-end" },
   otpSheet: { borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 28, gap: 16, alignItems: "center" },

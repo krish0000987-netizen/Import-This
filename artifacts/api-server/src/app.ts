@@ -5,6 +5,7 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { paymentStore } from "./routes/payments";
 
 const app: Express = express();
 
@@ -44,6 +45,9 @@ const io = new SocketIOServer(httpServer, {
 const otpStore = new Map<string, string>();
 const rideRooms = new Map<string, { customerSocketId?: string; driverSocketId?: string }>();
 
+// Track rides pending payment: rideId → { fare, status }
+export const pendingPaymentRides = new Map<string, { fare: number; status: "pending_payment" | "completed" }>();
+
 // Utility
 function getRideRoom(rideId: string) {
   if (!rideRooms.has(rideId)) rideRooms.set(rideId, {});
@@ -60,6 +64,15 @@ io.on("connection", (socket) => {
     if (role === "customer") room.customerSocketId = socket.id;
     if (role === "driver") room.driverSocketId = socket.id;
     logger.info({ rideId, role, socketId: socket.id }, "Joined ride room");
+
+    // If customer joins a ride that is pending payment, remind them
+    if (role === "customer") {
+      const pending = pendingPaymentRides.get(rideId);
+      if (pending && pending.status === "pending_payment") {
+        socket.emit("requestPayment", { rideId, fare: pending.fare });
+        logger.info({ rideId }, "Re-emitted requestPayment to rejoining customer");
+      }
+    }
   });
 
   // Driver presses "Arrived at Pickup"
@@ -73,7 +86,6 @@ io.on("connection", (socket) => {
     if (room.customerSocketId) {
       io.to(room.customerSocketId).emit("rideOtpReady", { otp });
     } else {
-      // Broadcast to room as fallback
       io.to(`ride:${rideId}`).emit("rideOtpReady", { otp });
     }
 
@@ -88,7 +100,6 @@ io.on("connection", (socket) => {
 
     if (correctOtp && otp.trim() === correctOtp) {
       otpStore.delete(rideId);
-      // Notify both
       io.to(`ride:${rideId}`).emit("otpVerified", { rideId });
       logger.info({ rideId }, "OTP verified – ride started");
     } else {
@@ -96,7 +107,55 @@ io.on("connection", (socket) => {
     }
   });
 
-  // Keep existing driver events
+  // ── Payment Flow ──────────────────────────────────────────────────────────
+
+  /**
+   * Driver signals end of trip — payment is required before completing.
+   * Server puts ride into pending_payment, notifies customer.
+   */
+  socket.on("driverEndTrip", ({ rideId, fare }: { rideId: string; fare: number }) => {
+    logger.info({ rideId, fare }, "Driver ended trip — awaiting customer payment");
+    pendingPaymentRides.set(rideId, { fare, status: "pending_payment" });
+
+    const room = getRideRoom(rideId);
+    // Tell driver to wait
+    socket.emit("awaitingPayment", { rideId, fare });
+    // Tell customer to pay
+    if (room.customerSocketId) {
+      io.to(room.customerSocketId).emit("requestPayment", { rideId, fare });
+    } else {
+      io.to(`ride:${rideId}`).emit("requestPayment", { rideId, fare });
+    }
+  });
+
+  /**
+   * Customer confirms payment was verified (called after /api/payments/verify succeeds).
+   * Server completes the ride and notifies both parties.
+   */
+  socket.on("customerPaymentDone", ({ rideId }: { rideId: string }) => {
+    const payment = paymentStore.get(rideId);
+    if (!payment || payment.status !== "paid") {
+      socket.emit("paymentError", { rideId, message: "Payment not yet confirmed. Please try again." });
+      return;
+    }
+    const pending = pendingPaymentRides.get(rideId);
+    if (pending) pending.status = "completed";
+    logger.info({ rideId }, "Payment confirmed — ride completed");
+
+    const room = getRideRoom(rideId);
+    // Notify both customer and driver
+    io.to(`ride:${rideId}`).emit("paymentConfirmed", {
+      rideId,
+      fare: pending?.fare ?? payment.amount / 100,
+      paymentId: payment.paymentId,
+    });
+
+    // Clean up OTP store
+    otpStore.delete(rideId);
+  });
+
+  // ── Existing Driver Events ────────────────────────────────────────────────
+
   socket.on("driverOnline", ({ driverId }: { driverId: string }) => {
     socket.join(`driver:${driverId}`);
     logger.info({ driverId }, "Driver online");
@@ -118,7 +177,6 @@ io.on("connection", (socket) => {
 
   socket.on("findDriver", (payload: Record<string, unknown>) => {
     logger.info({ payload }, "findDriver event received");
-    // Simulate no drivers found after timeout if no real driver is connected
   });
 
   socket.on("cancelRide", ({ rideId }: { rideId: string }) => {

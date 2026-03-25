@@ -151,6 +151,24 @@ export default function DriverAssigned() {
     const socket = connectSocket();
     emitJoinRideRoom(rideId, "customer");
 
+    // Driver ended trip → navigate to payment screen (in case customer is still on this screen)
+    socket.on("requestPayment", ({ rideId: rid, fare: rideFare }: { rideId: string; fare: number }) => {
+      router.replace({
+        pathname: "/booking/payment",
+        params: {
+          rideId: rid,
+          fare: String(Math.round(rideFare)),
+          destination: params.destination || "",
+          pickup: params.pickup || "",
+          distanceKm: params.distanceKm || "",
+          couponCode: params.couponCode || "",
+          couponDiscount: params.couponDiscount || "",
+          originalFare: params.originalFare || "",
+          vehicle: params.vehicleType || "",
+        },
+      });
+    });
+
     // Driver arrived → server sends OTP
     socket.on("rideOtpReady", ({ otp }: { otp: string }) => {
       setLiveOtp(otp);
@@ -205,6 +223,7 @@ export default function DriverAssigned() {
 
     return () => {
       clearInterval(etaInterval);
+      socket.off("requestPayment");
       socket.off("rideOtpReady");
       socket.off("otpVerified");
       socket.off("rideCancelled");

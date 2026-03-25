@@ -17,6 +17,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown, FadeInUp, ZoomIn } from "react-native-reanimated";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
+import { connectSocket, emitJoinRideRoom } from "@/services/socketService";
 
 export default function BookingConfirmed() {
   const insets = useSafeAreaInsets();
@@ -80,6 +81,34 @@ export default function BookingConfirmed() {
         RNAnimated.timing(rippleAnim, { toValue: 0, duration: 0, useNativeDriver: true }),
       ])
     ).start();
+
+    // Re-join ride room so we receive payment events
+    const rideId = bookingId || "";
+    const socket = connectSocket();
+    if (rideId) emitJoinRideRoom(rideId, "customer");
+
+    // Driver ended trip → navigate to payment screen
+    socket.on("requestPayment", ({ rideId: rid, fare: rideFare }: { rideId: string; fare: number }) => {
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+      router.replace({
+        pathname: "/booking/payment",
+        params: {
+          rideId: rid,
+          fare: String(Math.round(rideFare)),
+          destination: destination || "",
+          pickup: pickup || "",
+          distanceKm: distanceKm || "",
+          couponCode: couponCode || "",
+          couponDiscount: couponDiscount || "",
+          originalFare: originalFare || "",
+          vehicle: vehicle || "",
+        },
+      });
+    });
+
+    return () => {
+      socket.off("requestPayment");
+    };
   }, []);
 
   const fareNum = fare ? parseInt(fare) : 0;
@@ -258,7 +287,7 @@ export default function BookingConfirmed() {
 
           <View style={[styles.paymentBadge, { backgroundColor: isDark ? "#1A1A1A" : "#F5F5F5" }]}>
             <Ionicons name="wallet-outline" size={14} color={colors.textSecondary} />
-            <Text style={[styles.paymentText, { color: colors.textSecondary }]}>Pay on arrival · Cash / UPI</Text>
+            <Text style={[styles.paymentText, { color: colors.textSecondary }]}>Online Payment · Razorpay</Text>
           </View>
         </Animated.View>
 

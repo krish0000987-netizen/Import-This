@@ -375,9 +375,9 @@ export default function CreateBooking() {
           )}
 
           <View style={[styles.payBadge, { backgroundColor: isDark ? "#1a1a18" : "#F5F3EE" }]}>
-            <Ionicons name="cash-outline" size={14} color={colors.textSecondary} />
+            <Ionicons name="lock-closed-outline" size={14} color={colors.textSecondary} />
             <Text style={[styles.payText, { color: colors.textSecondary }]}>
-              Pay on arrival · Cash / UPI
+              Online Payment · Razorpay · After ride
             </Text>
           </View>
         </Animated.View>
