@@ -16,6 +16,8 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useData } from "@/contexts/DataContext";
+import { useRouter } from "expo-router";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
@@ -70,6 +72,10 @@ export default function AdminDashboard() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const { user } = useAuth();
+  const { drivers: allDrivers } = useData();
+  const router = useRouter();
+
+  const pendingApplications = allDrivers.filter((d) => d.kycStatus === "submitted").length;
 
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [drivers, setDrivers] = useState<OnlineDriver[]>([]);
@@ -144,6 +150,24 @@ export default function AdminDashboard() {
         <Text style={[styles.lastUpdated, { color: colors.textSecondary }]}>
           Updated {formatTime(lastUpdated)} · auto-refreshes every 15s
         </Text>
+      )}
+
+      {pendingApplications > 0 && (
+        <Pressable
+          onPress={() => router.push("/admin/drivers" as any)}
+          style={[styles.pendingBanner, { backgroundColor: Colors.gold + "15", borderColor: Colors.gold + "40" }]}
+        >
+          <View style={[styles.pendingIconWrap, { backgroundColor: Colors.gold + "25" }]}>
+            <Ionicons name="person-add-outline" size={18} color={Colors.gold} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.pendingTitle, { color: Colors.gold }]}>
+              {pendingApplications} Pending Application{pendingApplications !== 1 ? "s" : ""}
+            </Text>
+            <Text style={[styles.pendingSub, { color: colors.textSecondary }]}>Tap to review driver KYC submissions</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={Colors.gold} />
+        </Pressable>
       )}
 
       {loading && !stats ? (
@@ -253,7 +277,11 @@ const styles = StyleSheet.create({
   liveDot: { width: 8, height: 8, borderRadius: 4 },
   adminBadge: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10 },
   adminLabel: { fontFamily: "Poppins_600SemiBold", fontSize: 12 },
-  lastUpdated: { fontFamily: "Poppins_400Regular", fontSize: 11, marginBottom: 20 },
+  lastUpdated: { fontFamily: "Poppins_400Regular", fontSize: 11, marginBottom: 12 },
+  pendingBanner: { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1, borderRadius: 14, padding: 14, marginBottom: 16 },
+  pendingIconWrap: { width: 36, height: 36, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  pendingTitle: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
+  pendingSub: { fontFamily: "Poppins_400Regular", fontSize: 11, marginTop: 1 },
   loadingWrap: { alignItems: "center", paddingVertical: 60, gap: 12 },
   loadingText: { fontFamily: "Poppins_400Regular", fontSize: 14 },
   statsGrid: { flexDirection: "row", flexWrap: "wrap", gap: 12, marginBottom: 20 },

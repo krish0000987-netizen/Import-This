@@ -6,6 +6,7 @@ import {
   SupportTicket, sampleTickets, WithdrawalRequest, sampleWithdrawals, DriverDocument,
   CustomDestination, DestinationItem, DestinationOverride,
 } from "@/constants/data";
+import { registerDriverAddedCallback } from "@/services/driverBridge";
 
 interface DataContextValue {
   bookings: BookingData[];
@@ -23,9 +24,12 @@ interface DataContextValue {
   updateBookingStatus: (id: string, status: BookingData["status"]) => Promise<void>;
   toggleFavorite: (destinationId: string) => void;
   isFavorite: (destinationId: string) => boolean;
+  addDriver: (driver: DriverData) => void;
   updateDriverStatus: (driverId: string, updates: Partial<DriverData>) => void;
   toggleDriverBlock: (driverId: string) => void;
   updateDriverDocument: (driverId: string, docType: string, updates: Partial<DriverDocument>) => void;
+  approveDriver: (driverId: string) => void;
+  rejectDriver: (driverId: string, reason?: string) => void;
   applyCoupon: (code: string, amount: number) => { valid: boolean; discount: number; message: string };
   addCoupon: (coupon: Omit<CouponData, "id">) => void;
   updateCoupon: (id: string, updates: Partial<CouponData>) => void;
@@ -64,12 +68,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadData();
+    // Register global bridge so AuthContext can notify us when a new driver registers
+    registerDriverAddedCallback((driver: DriverData) => {
+      setDrivers((prev) => {
+        if (prev.some((d) => d.id === driver.id)) return prev;
+        return [driver, ...prev];
+      });
+    });
   }, []);
 
   const loadData = async () => {
     try {
       const [storedBookings, storedFavorites, storedCoupons, storedReviews, storedTickets,
-             storedCustomDests, storedDestOverrides] = await Promise.all([
+             storedCustomDests, storedDestOverrides, storedPendingDrivers] = await Promise.all([
         AsyncStorage.getItem("@safargo_bookings"),
         AsyncStorage.getItem("@safargo_favorites"),
         AsyncStorage.getItem("@safargo_coupons"),
@@ -77,6 +88,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         AsyncStorage.getItem("@safargo_tickets"),
         AsyncStorage.getItem("@safargo_custom_destinations"),
         AsyncStorage.getItem("@safargo_destination_overrides"),
+        AsyncStorage.getItem("@safargo_pending_drivers"),
       ]);
       if (storedBookings) setBookings(JSON.parse(storedBookings));
       if (storedFavorites) setFavorites(JSON.parse(storedFavorites));
@@ -85,6 +97,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
       if (storedTickets) setTickets(JSON.parse(storedTickets));
       if (storedCustomDests) setCustomDestinations(JSON.parse(storedCustomDests));
       if (storedDestOverrides) setDestinationOverrides(JSON.parse(storedDestOverrides));
+      if (storedPendingDrivers) {
+        const pending: DriverData[] = JSON.parse(storedPendingDrivers);
+        setDrivers((prev) => {
+          const existingIds = new Set(prev.map((d) => d.id));
+          const newOnes = pending.filter((p) => !existingIds.has(p.id));
+          return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+        });
+      }
     } catch (e) {
       console.error("Failed to load data", e);
     }
@@ -145,6 +165,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
     (destinationId: string) => favorites.includes(destinationId),
     [favorites]
   );
+
+  const addDriver = useCallback((driver: DriverData) => {
+    setDrivers((prev) => {
+      if (prev.some((d) => d.id === driver.id)) return prev;
+      return [driver, ...prev];
+    });
+  }, []);
+
+  const approveDriver = useCallback((driverId: string) => {
+    setDrivers((prev) =>
+      prev.map((d) => d.id === driverId
+        ? { ...d, kycStatus: "approved" as const, documents: d.documents.map((doc) => ({ ...doc, status: doc.status === "uploaded" ? "verified" as const : doc.status })) }
+        : d
+      )
+    );
+  }, []);
+
+  const rejectDriver = useCallback((driverId: string, reason?: string) => {
+    setDrivers((prev) =>
+      prev.map((d) => d.id === driverId ? { ...d, kycStatus: "rejected" as const, rejectionReason: reason } : d)
+    );
+  }, []);
 
   const updateDriverStatus = useCallback((driverId: string, updates: Partial<DriverData>) => {
     setDrivers((prev) =>
@@ -300,6 +342,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
       bookings, favorites, drivers, coupons, reviews, tickets, withdrawals, commissionRate,
       customDestinations, destinationOverrides,
       addBooking, cancelBooking, updateBookingStatus, toggleFavorite, isFavorite,
+      addDriver, approveDriver, rejectDriver,
       updateDriverStatus, toggleDriverBlock, updateDriverDocument,
       applyCoupon, addCoupon, updateCoupon, deleteCoupon,
       addReview, getDriverReviews,
@@ -312,6 +355,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     [bookings, favorites, drivers, coupons, reviews, tickets, withdrawals, commissionRate,
      customDestinations, destinationOverrides,
      addBooking, cancelBooking, updateBookingStatus, toggleFavorite, isFavorite,
+     addDriver, approveDriver, rejectDriver,
      updateDriverStatus, toggleDriverBlock, updateDriverDocument,
      applyCoupon, addCoupon, updateCoupon, deleteCoupon,
      addReview, getDriverReviews,

@@ -116,6 +116,7 @@ export interface UserData {
 export interface DriverData extends UserData {
   vehicle: string;
   vehicleNumber: string;
+  vehicleType?: "sedan" | "suv";
   rating: number;
   isAvailable: boolean;
   isBlocked: boolean;
@@ -127,6 +128,8 @@ export interface DriverData extends UserData {
   completedTrips: number;
   commissionRate: number;
   documents: DriverDocument[];
+  appliedAt?: string;
+  rejectionReason?: string;
 }
 
 export const destinations: Destination[] = [
@@ -311,6 +314,7 @@ export interface DriverDocument {
   uploadDate?: string;
   expiryDate?: string;
   rejectionReason?: string;
+  docNumber?: string;
 }
 
 export interface SupportTicket {
@@ -364,7 +368,160 @@ export const defaultDriverDocuments: DriverDocument[] = [
   { type: "pan", label: "PAN Card", status: "not_uploaded" },
 ];
 
-export const sampleDrivers: DriverData[] = [];
+export const sampleDrivers: DriverData[] = [
+  {
+    id: "d_sample1",
+    name: "Mohit Tiwari",
+    email: "mohit.tiwari@example.com",
+    phone: "+91 98100 55432",
+    role: "driver",
+    walletBalance: 0,
+    totalTrips: 0,
+    memberSince: "2026-03-20",
+    vehicle: "Maruti Suzuki Dzire",
+    vehicleNumber: "UP 32 MT 4521",
+    vehicleType: "sedan",
+    appliedAt: "2026-03-20",
+    rating: 0,
+    isAvailable: false,
+    isBlocked: false,
+    kycStatus: "submitted",
+    totalEarnings: 0,
+    todayEarnings: 0,
+    weekEarnings: 0,
+    monthEarnings: 0,
+    completedTrips: 0,
+    commissionRate: 15,
+    documents: [
+      { type: "driving_license", label: "Driving License (DL)", status: "uploaded", uploadDate: "2026-03-20", docNumber: "UP1120230012345", expiryDate: "2031-03" },
+      { type: "aadhaar", label: "Aadhaar Card", status: "uploaded", uploadDate: "2026-03-20", docNumber: "XXXX XXXX 7821" },
+      { type: "pan", label: "PAN Card", status: "uploaded", uploadDate: "2026-03-20", docNumber: "ABCDE1234F" },
+      { type: "rc", label: "Vehicle RC (Registration)", status: "uploaded", uploadDate: "2026-03-20", docNumber: "UP32MT4521", expiryDate: "2028-06" },
+      { type: "insurance", label: "Vehicle Insurance", status: "uploaded", uploadDate: "2026-03-20", docNumber: "NIC/2026/45678", expiryDate: "2027-03" },
+    ],
+  },
+  {
+    id: "d_sample2",
+    name: "Priya Sharma",
+    email: "priya.sharma@example.com",
+    phone: "+91 97320 88901",
+    role: "driver",
+    walletBalance: 0,
+    totalTrips: 0,
+    memberSince: "2026-03-18",
+    vehicle: "Honda City",
+    vehicleNumber: "DL 7C AB 3340",
+    vehicleType: "sedan",
+    appliedAt: "2026-03-18",
+    rating: 0,
+    isAvailable: false,
+    isBlocked: false,
+    kycStatus: "submitted",
+    totalEarnings: 0,
+    todayEarnings: 0,
+    weekEarnings: 0,
+    monthEarnings: 0,
+    completedTrips: 0,
+    commissionRate: 15,
+    documents: [
+      { type: "driving_license", label: "Driving License (DL)", status: "uploaded", uploadDate: "2026-03-18", docNumber: "DL0420210098765", expiryDate: "2030-10" },
+      { type: "aadhaar", label: "Aadhaar Card", status: "uploaded", uploadDate: "2026-03-18", docNumber: "XXXX XXXX 4432" },
+      { type: "pan", label: "PAN Card", status: "uploaded", uploadDate: "2026-03-18", docNumber: "PQRST9876W" },
+      { type: "rc", label: "Vehicle RC (Registration)", status: "uploaded", uploadDate: "2026-03-18", docNumber: "DL7CAB3340", expiryDate: "2029-01" },
+      { type: "insurance", label: "Vehicle Insurance", status: "rejected", uploadDate: "2026-03-18", docNumber: "HDFC/2024/11233", expiryDate: "2025-01", rejectionReason: "Document has expired. Please upload a valid insurance certificate." },
+    ],
+  },
+  {
+    id: "d_sample3",
+    name: "Deepak Verma",
+    email: "deepak.verma@example.com",
+    phone: "+91 89900 12340",
+    role: "driver",
+    walletBalance: 2800,
+    totalTrips: 245,
+    memberSince: "2025-08-10",
+    vehicle: "Toyota Innova Crysta",
+    vehicleNumber: "UP 65 DV 9900",
+    vehicleType: "suv",
+    rating: 4.7,
+    isAvailable: true,
+    isBlocked: false,
+    kycStatus: "approved",
+    totalEarnings: 168000,
+    todayEarnings: 2400,
+    weekEarnings: 11500,
+    monthEarnings: 38000,
+    completedTrips: 241,
+    commissionRate: 15,
+    documents: [
+      { type: "driving_license", label: "Driving License (DL)", status: "verified", uploadDate: "2025-08-10", docNumber: "UP6520190034567", expiryDate: "2030-08" },
+      { type: "aadhaar", label: "Aadhaar Card", status: "verified", uploadDate: "2025-08-10", docNumber: "XXXX XXXX 9012" },
+      { type: "pan", label: "PAN Card", status: "verified", uploadDate: "2025-08-10", docNumber: "DVERM5678K" },
+      { type: "rc", label: "Vehicle RC (Registration)", status: "verified", uploadDate: "2025-08-10", docNumber: "UP65DV9900", expiryDate: "2027-09" },
+      { type: "insurance", label: "Vehicle Insurance", status: "verified", uploadDate: "2025-08-10", docNumber: "BAJAJ/2025/89001", expiryDate: "2026-08" },
+    ],
+  },
+  {
+    id: "d_sample4",
+    name: "Sunil Yadav",
+    email: "sunil.yadav@example.com",
+    phone: "+91 76540 33210",
+    role: "driver",
+    walletBalance: 0,
+    totalTrips: 0,
+    memberSince: "2026-03-22",
+    vehicle: "Hyundai Xcent",
+    vehicleNumber: "UP 80 SY 2211",
+    vehicleType: "sedan",
+    rating: 0,
+    isAvailable: false,
+    isBlocked: false,
+    kycStatus: "pending",
+    totalEarnings: 0,
+    todayEarnings: 0,
+    weekEarnings: 0,
+    monthEarnings: 0,
+    completedTrips: 0,
+    commissionRate: 15,
+    documents: [
+      { type: "driving_license", label: "Driving License (DL)", status: "not_uploaded" },
+      { type: "aadhaar", label: "Aadhaar Card", status: "not_uploaded" },
+      { type: "pan", label: "PAN Card", status: "not_uploaded" },
+      { type: "rc", label: "Vehicle RC (Registration)", status: "not_uploaded" },
+      { type: "insurance", label: "Vehicle Insurance", status: "not_uploaded" },
+    ],
+  },
+  {
+    id: "d_sample5",
+    name: "Anwar Khan",
+    email: "anwar.khan@example.com",
+    phone: "+91 92100 78654",
+    role: "driver",
+    walletBalance: 0,
+    totalTrips: 0,
+    memberSince: "2026-02-28",
+    vehicle: "Tata Tigor",
+    vehicleNumber: "UP 32 AK 5566",
+    vehicleType: "sedan",
+    rating: 0,
+    isAvailable: false,
+    isBlocked: false,
+    kycStatus: "rejected",
+    totalEarnings: 0,
+    todayEarnings: 0,
+    weekEarnings: 0,
+    monthEarnings: 0,
+    completedTrips: 0,
+    commissionRate: 15,
+    documents: [
+      { type: "driving_license", label: "Driving License (DL)", status: "rejected", uploadDate: "2026-02-28", docNumber: "UP3220220055432", rejectionReason: "Image is blurry. Please upload a clear photo." },
+      { type: "aadhaar", label: "Aadhaar Card", status: "uploaded", uploadDate: "2026-02-28", docNumber: "XXXX XXXX 6644" },
+      { type: "pan", label: "PAN Card", status: "uploaded", uploadDate: "2026-02-28", docNumber: "KHANW1234M" },
+      { type: "rc", label: "Vehicle RC (Registration)", status: "uploaded", uploadDate: "2026-02-28", docNumber: "UP32AK5566", expiryDate: "2029-04" },
+      { type: "insurance", label: "Vehicle Insurance", status: "uploaded", uploadDate: "2026-02-28", docNumber: "IFFCO/2026/34456", expiryDate: "2027-02" },
+    ],
+  },
+];
 
 export const sampleCoupons: CouponData[] = [
   {

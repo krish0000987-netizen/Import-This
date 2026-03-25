@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,29 +8,92 @@ import {
   Platform,
   Alert,
   Modal,
+  TextInput,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@/components/icons";
 import * as Haptics from "expo-haptics";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { DriverData, DriverDocument } from "@/constants/data";
+import { DriverData } from "@/constants/data";
 
-const statusColors: Record<string, string> = {
+const kycColors: Record<string, string> = {
+  approved: "#2ECC71",
+  submitted: "#F39C12",
+  rejected: "#E74C3C",
+  pending: "#9E9E9E",
+};
+
+const docStatusColors: Record<string, string> = {
   not_uploaded: "#9E9E9E",
   uploaded: "#F39C12",
   verified: "#2ECC71",
   rejected: "#E74C3C",
 };
 
+type Tab = "applications" | "approved" | "all";
+
+function RejectReasonModal({
+  visible,
+  onClose,
+  onConfirm,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: (reason: string) => void;
+}) {
+  const { colors } = useTheme();
+  const [reason, setReason] = useState("");
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={rejectStyles.overlay}>
+        <View style={[rejectStyles.card, { backgroundColor: colors.surface }]}>
+          <Text style={[rejectStyles.title, { color: colors.text }]}>Rejection Reason</Text>
+          <Text style={[rejectStyles.subtitle, { color: colors.textSecondary }]}>
+            Provide a reason so the driver can resubmit documents.
+          </Text>
+          <TextInput
+            style={[rejectStyles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+            placeholder="e.g. Document photo is blurry, insurance expired..."
+            placeholderTextColor={colors.textTertiary}
+            value={reason}
+            onChangeText={setReason}
+            multiline
+            numberOfLines={3}
+            textAlignVertical="top"
+          />
+          <View style={rejectStyles.btnRow}>
+            <Pressable onPress={onClose} style={[rejectStyles.btn, { backgroundColor: colors.background }]}>
+              <Text style={[rejectStyles.btnText, { color: colors.textSecondary }]}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => { onConfirm(reason.trim() || "Documents did not meet requirements."); setReason(""); }}
+              style={[rejectStyles.btn, { backgroundColor: "#E74C3C18" }]}
+            >
+              <Text style={[rejectStyles.btnText, { color: "#E74C3C" }]}>Reject</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 function DriverDetailModal({
-  visible, onClose, driver,
-}: { visible: boolean; onClose: () => void; driver: DriverData | null }) {
+  visible,
+  onClose,
+  driver,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  driver: DriverData | null;
+}) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { toggleDriverBlock, updateDriverDocument, getDriverReviews } = useData();
+  const { toggleDriverBlock, updateDriverDocument, getDriverReviews, approveDriver, rejectDriver } = useData();
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
 
   if (!driver) return null;
   const driverReviews = getDriverReviews(driver.id);
@@ -43,154 +106,265 @@ function DriverDetailModal({
   const handleRejectDoc = (docType: string) => {
     Alert.alert("Reject Document", "Reject this document?", [
       { text: "Cancel" },
-      { text: "Reject", style: "destructive", onPress: () => updateDriverDocument(driver.id, docType, { status: "rejected", rejectionReason: "Document unclear or expired" }) },
+      {
+        text: "Reject",
+        style: "destructive",
+        onPress: () => updateDriverDocument(driver.id, docType, { status: "rejected", rejectionReason: "Document unclear or expired" }),
+      },
+    ]);
+  };
+
+  const handleApproveKyc = () => {
+    Alert.alert("Approve KYC", `Approve ${driver.name} as a verified driver?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Approve",
+        onPress: () => {
+          approveDriver(driver.id);
+          if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          onClose();
+        },
+      },
     ]);
   };
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View style={[detailStyles.container, { backgroundColor: colors.background }]}>
-        <View style={[detailStyles.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) + 8 }]}>
-          <Pressable onPress={onClose} style={[detailStyles.closeBtn, { backgroundColor: colors.surface }]}>
-            <Ionicons name="chevron-back" size={22} color={colors.text} />
-          </Pressable>
-          <Text style={[detailStyles.headerTitle, { color: colors.text }]}>Driver Details</Text>
-          <View style={{ width: 40 }} />
-        </View>
+    <>
+      <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+        <View style={[detailStyles.container, { backgroundColor: colors.background }]}>
+          <View style={[detailStyles.header, { paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) + 8 }]}>
+            <Pressable onPress={onClose} style={[detailStyles.closeBtn, { backgroundColor: colors.surface }]}>
+              <Ionicons name="chevron-back" size={22} color={colors.text} />
+            </Pressable>
+            <Text style={[detailStyles.headerTitle, { color: colors.text }]}>Driver Details</Text>
+            <View style={{ width: 40 }} />
+          </View>
 
-        <FlatList
-          data={[{ key: "content" }]}
-          keyExtractor={(item) => item.key}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
-          showsVerticalScrollIndicator={false}
-          renderItem={() => (
-            <>
-              <View style={detailStyles.profileSection}>
-                <View style={[detailStyles.avatar, { backgroundColor: Colors.gold }]}>
-                  <Text style={detailStyles.avatarText}>{driver.name[0]}</Text>
+          <FlatList
+            data={[{ key: "content" }]}
+            keyExtractor={(item) => item.key}
+            contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+            showsVerticalScrollIndicator={false}
+            renderItem={() => (
+              <>
+                <View style={detailStyles.profileSection}>
+                  <View style={[detailStyles.avatar, { backgroundColor: Colors.gold }]}>
+                    <Text style={detailStyles.avatarText}>{driver.name[0]}</Text>
+                  </View>
+                  <Text style={[detailStyles.name, { color: colors.text }]}>{driver.name}</Text>
+                  <Text style={[detailStyles.phone, { color: colors.textSecondary }]}>{driver.phone}</Text>
+                  <View style={[detailStyles.kycBadge, { backgroundColor: (kycColors[driver.kycStatus] || "#9E9E9E") + "20" }]}>
+                    <Ionicons
+                      name={driver.kycStatus === "approved" ? "checkmark-circle" : driver.kycStatus === "rejected" ? "close-circle" : "time"}
+                      size={14}
+                      color={kycColors[driver.kycStatus] || "#9E9E9E"}
+                    />
+                    <Text style={[detailStyles.kycText, { color: kycColors[driver.kycStatus] || "#9E9E9E" }]}>
+                      KYC {driver.kycStatus.charAt(0).toUpperCase() + driver.kycStatus.slice(1)}
+                    </Text>
+                  </View>
+                  {driver.rejectionReason ? (
+                    <View style={[detailStyles.rejectionNote, { backgroundColor: "#E74C3C10", borderColor: "#E74C3C30" }]}>
+                      <Ionicons name="alert-circle-outline" size={14} color="#E74C3C" />
+                      <Text style={[detailStyles.rejectionText, { color: "#E74C3C" }]}>{driver.rejectionReason}</Text>
+                    </View>
+                  ) : null}
+                  <View style={detailStyles.statsRow}>
+                    <View style={detailStyles.statItem}>
+                      <Ionicons name="star" size={16} color={Colors.gold} />
+                      <Text style={[detailStyles.statValue, { color: colors.text }]}>{driver.rating || "N/A"}</Text>
+                    </View>
+                    <View style={detailStyles.statItem}>
+                      <Ionicons name="navigate" size={16} color={Colors.gold} />
+                      <Text style={[detailStyles.statValue, { color: colors.text }]}>{driver.completedTrips} trips</Text>
+                    </View>
+                    <View style={detailStyles.statItem}>
+                      <Ionicons name="wallet" size={16} color={Colors.gold} />
+                      <Text style={[detailStyles.statValue, { color: colors.text }]}>₹{driver.totalEarnings.toLocaleString()}</Text>
+                    </View>
+                  </View>
                 </View>
-                <Text style={[detailStyles.name, { color: colors.text }]}>{driver.name}</Text>
-                <Text style={[detailStyles.phone, { color: colors.textSecondary }]}>{driver.phone}</Text>
-                <View style={detailStyles.statsRow}>
-                  <View style={detailStyles.statItem}>
-                    <Ionicons name="star" size={16} color={Colors.gold} />
-                    <Text style={[detailStyles.statValue, { color: colors.text }]}>{driver.rating || "N/A"}</Text>
-                  </View>
-                  <View style={detailStyles.statItem}>
-                    <Ionicons name="navigate" size={16} color={Colors.gold} />
-                    <Text style={[detailStyles.statValue, { color: colors.text }]}>{driver.completedTrips} trips</Text>
-                  </View>
-                  <View style={detailStyles.statItem}>
-                    <Ionicons name="wallet" size={16} color={Colors.gold} />
-                    <Text style={[detailStyles.statValue, { color: colors.text }]}>{"\u20B9"}{driver.totalEarnings.toLocaleString()}</Text>
-                  </View>
-                </View>
-              </View>
 
-              <View style={[detailStyles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={detailStyles.infoRow}>
-                  <Text style={[detailStyles.infoLabel, { color: colors.textSecondary }]}>Vehicle</Text>
-                  <Text style={[detailStyles.infoValue, { color: colors.text }]}>{driver.vehicle}</Text>
+                <View style={[detailStyles.infoCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <View style={detailStyles.infoRow}>
+                    <Text style={[detailStyles.infoLabel, { color: colors.textSecondary }]}>Vehicle</Text>
+                    <Text style={[detailStyles.infoValue, { color: colors.text }]}>{driver.vehicle}</Text>
+                  </View>
+                  <View style={detailStyles.infoRow}>
+                    <Text style={[detailStyles.infoLabel, { color: colors.textSecondary }]}>Number</Text>
+                    <Text style={[detailStyles.infoValue, { color: colors.text }]}>{driver.vehicleNumber}</Text>
+                  </View>
+                  {driver.vehicleType ? (
+                    <View style={detailStyles.infoRow}>
+                      <Text style={[detailStyles.infoLabel, { color: colors.textSecondary }]}>Type</Text>
+                      <Text style={[detailStyles.infoValue, { color: colors.text }]}>{driver.vehicleType.toUpperCase()}</Text>
+                    </View>
+                  ) : null}
+                  <View style={detailStyles.infoRow}>
+                    <Text style={[detailStyles.infoLabel, { color: colors.textSecondary }]}>Commission</Text>
+                    <Text style={[detailStyles.infoValue, { color: Colors.gold }]}>{driver.commissionRate}%</Text>
+                  </View>
+                  <View style={detailStyles.infoRow}>
+                    <Text style={[detailStyles.infoLabel, { color: colors.textSecondary }]}>Wallet</Text>
+                    <Text style={[detailStyles.infoValue, { color: colors.text }]}>₹{driver.walletBalance.toLocaleString()}</Text>
+                  </View>
+                  {driver.appliedAt ? (
+                    <View style={detailStyles.infoRow}>
+                      <Text style={[detailStyles.infoLabel, { color: colors.textSecondary }]}>Applied</Text>
+                      <Text style={[detailStyles.infoValue, { color: colors.text }]}>{driver.appliedAt}</Text>
+                    </View>
+                  ) : null}
                 </View>
-                <View style={detailStyles.infoRow}>
-                  <Text style={[detailStyles.infoLabel, { color: colors.textSecondary }]}>Number</Text>
-                  <Text style={[detailStyles.infoValue, { color: colors.text }]}>{driver.vehicleNumber}</Text>
-                </View>
-                <View style={detailStyles.infoRow}>
-                  <Text style={[detailStyles.infoLabel, { color: colors.textSecondary }]}>Commission</Text>
-                  <Text style={[detailStyles.infoValue, { color: Colors.gold }]}>{driver.commissionRate}%</Text>
-                </View>
-                <View style={detailStyles.infoRow}>
-                  <Text style={[detailStyles.infoLabel, { color: colors.textSecondary }]}>Wallet</Text>
-                  <Text style={[detailStyles.infoValue, { color: colors.text }]}>{"\u20B9"}{driver.walletBalance.toLocaleString()}</Text>
-                </View>
-              </View>
 
-              <Text style={[detailStyles.sectionTitle, { color: colors.text }]}>Documents</Text>
-              <View style={[detailStyles.docsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                {driver.documents.map((doc, i) => {
-                  const docColor = statusColors[doc.status];
-                  return (
-                    <View key={doc.type}>
-                      {i > 0 && <View style={[detailStyles.divider, { backgroundColor: colors.border }]} />}
-                      <View style={detailStyles.docRow}>
-                        <View style={[detailStyles.docDot, { backgroundColor: docColor }]} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={[detailStyles.docLabel, { color: colors.text }]}>{doc.label}</Text>
-                          <Text style={[detailStyles.docStatus, { color: docColor }]}>
-                            {doc.status.replace("_", " ").charAt(0).toUpperCase() + doc.status.replace("_", " ").slice(1)}
-                            {doc.uploadDate ? ` · ${doc.uploadDate}` : ""}
+                <Text style={[detailStyles.sectionTitle, { color: colors.text }]}>Documents</Text>
+                <View style={[detailStyles.docsCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  {driver.documents.map((doc, i) => {
+                    const docColor = docStatusColors[doc.status];
+                    return (
+                      <View key={doc.type}>
+                        {i > 0 && <View style={[detailStyles.divider, { backgroundColor: colors.border }]} />}
+                        <View style={detailStyles.docRow}>
+                          <View style={[detailStyles.docDot, { backgroundColor: docColor }]} />
+                          <View style={{ flex: 1 }}>
+                            <Text style={[detailStyles.docLabel, { color: colors.text }]}>{doc.label}</Text>
+                            <Text style={[detailStyles.docStatus, { color: docColor }]}>
+                              {doc.status.replace("_", " ").charAt(0).toUpperCase() + doc.status.replace("_", " ").slice(1)}
+                              {doc.docNumber ? ` · ${doc.docNumber}` : ""}
+                              {doc.uploadDate ? ` · ${doc.uploadDate}` : ""}
+                            </Text>
+                            {doc.expiryDate ? (
+                              <Text style={[detailStyles.docExpiry, { color: colors.textTertiary }]}>Exp: {doc.expiryDate}</Text>
+                            ) : null}
+                            {doc.rejectionReason ? (
+                              <Text style={[detailStyles.docRejection, { color: "#E74C3C" }]}>{doc.rejectionReason}</Text>
+                            ) : null}
+                          </View>
+                          {doc.status === "uploaded" && (
+                            <View style={{ flexDirection: "row", gap: 6 }}>
+                              <Pressable
+                                onPress={() => handleVerifyDoc(doc.type)}
+                                style={[detailStyles.docAction, { backgroundColor: "#2ECC7118" }]}
+                              >
+                                <Ionicons name="checkmark" size={16} color="#2ECC71" />
+                              </Pressable>
+                              <Pressable
+                                onPress={() => handleRejectDoc(doc.type)}
+                                style={[detailStyles.docAction, { backgroundColor: "#E74C3C18" }]}
+                              >
+                                <Ionicons name="close" size={16} color="#E74C3C" />
+                              </Pressable>
+                            </View>
+                          )}
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+
+                {driverReviews.length > 0 && (
+                  <>
+                    <Text style={[detailStyles.sectionTitle, { color: colors.text }]}>Reviews ({driverReviews.length})</Text>
+                    {driverReviews.map((review) => (
+                      <View key={review.id} style={[detailStyles.reviewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 }}>
+                          {[1, 2, 3, 4, 5].map((s) => (
+                            <Ionicons key={s} name={s <= review.rating ? "star" : "star-outline"} size={12} color={Colors.gold} />
+                          ))}
+                          <Text style={[{ fontFamily: "Poppins_400Regular", fontSize: 11, marginLeft: 4 }, { color: colors.textTertiary }]}>
+                            {review.date}
                           </Text>
                         </View>
-                        {doc.status === "uploaded" && (
-                          <View style={{ flexDirection: "row", gap: 6 }}>
-                            <Pressable onPress={() => handleVerifyDoc(doc.type)} style={[detailStyles.docAction, { backgroundColor: "#2ECC7118" }]}>
-                              <Ionicons name="checkmark" size={16} color="#2ECC71" />
-                            </Pressable>
-                            <Pressable onPress={() => handleRejectDoc(doc.type)} style={[detailStyles.docAction, { backgroundColor: "#E74C3C18" }]}>
-                              <Ionicons name="close" size={16} color="#E74C3C" />
-                            </Pressable>
-                          </View>
-                        )}
+                        {review.comment ? (
+                          <Text style={[detailStyles.reviewComment, { color: colors.textSecondary }]}>{review.comment}</Text>
+                        ) : null}
                       </View>
-                    </View>
-                  );
-                })}
-              </View>
+                    ))}
+                  </>
+                )}
 
-              {driverReviews.length > 0 && (
-                <>
-                  <Text style={[detailStyles.sectionTitle, { color: colors.text }]}>Reviews ({driverReviews.length})</Text>
-                  {driverReviews.map((review) => (
-                    <View key={review.id} style={[detailStyles.reviewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 }}>
-                        {[1, 2, 3, 4, 5].map((s) => (
-                          <Ionicons key={s} name={s <= review.rating ? "star" : "star-outline"} size={12} color={Colors.gold} />
-                        ))}
-                        <Text style={[{ fontFamily: "Poppins_400Regular", fontSize: 11, marginLeft: 4 }, { color: colors.textTertiary }]}>{review.date}</Text>
-                      </View>
-                      {review.comment ? <Text style={[detailStyles.reviewComment, { color: colors.textSecondary }]}>{review.comment}</Text> : null}
-                    </View>
-                  ))}
-                </>
-              )}
+                {driver.kycStatus === "submitted" && (
+                  <View style={detailStyles.kycActions}>
+                    <Pressable onPress={handleApproveKyc} style={[detailStyles.kycBtn, { backgroundColor: "#2ECC7118" }]}>
+                      <Ionicons name="checkmark-circle-outline" size={20} color="#2ECC71" />
+                      <Text style={[detailStyles.kycBtnText, { color: "#2ECC71" }]}>Approve Application</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setRejectModalVisible(true)}
+                      style={[detailStyles.kycBtn, { backgroundColor: "#E74C3C18" }]}
+                    >
+                      <Ionicons name="close-circle-outline" size={20} color="#E74C3C" />
+                      <Text style={[detailStyles.kycBtnText, { color: "#E74C3C" }]}>Reject Application</Text>
+                    </Pressable>
+                  </View>
+                )}
 
-              <Pressable
-                onPress={() => {
-                  if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                  Alert.alert(
-                    driver.isBlocked ? "Unblock Driver" : "Block Driver",
-                    driver.isBlocked ? `Unblock ${driver.name}?` : `Block ${driver.name}? They won't be able to accept rides.`,
-                    [
-                      { text: "Cancel" },
-                      {
-                        text: driver.isBlocked ? "Unblock" : "Block",
-                        style: driver.isBlocked ? "default" : "destructive",
-                        onPress: () => toggleDriverBlock(driver.id),
-                      },
-                    ]
-                  );
-                }}
-                style={[detailStyles.blockBtn, { backgroundColor: driver.isBlocked ? "#2ECC7118" : "#E74C3C18" }]}
-              >
-                <Ionicons name={driver.isBlocked ? "lock-open-outline" : "lock-closed-outline"} size={18} color={driver.isBlocked ? "#2ECC71" : "#E74C3C"} />
-                <Text style={[detailStyles.blockText, { color: driver.isBlocked ? "#2ECC71" : "#E74C3C" }]}>
-                  {driver.isBlocked ? "Unblock Driver" : "Block Driver"}
-                </Text>
-              </Pressable>
-            </>
-          )}
-        />
-      </View>
-    </Modal>
+                <Pressable
+                  onPress={() => {
+                    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                    Alert.alert(
+                      driver.isBlocked ? "Unblock Driver" : "Block Driver",
+                      driver.isBlocked
+                        ? `Unblock ${driver.name}?`
+                        : `Block ${driver.name}? They won't be able to accept rides.`,
+                      [
+                        { text: "Cancel" },
+                        {
+                          text: driver.isBlocked ? "Unblock" : "Block",
+                          style: driver.isBlocked ? "default" : "destructive",
+                          onPress: () => toggleDriverBlock(driver.id),
+                        },
+                      ]
+                    );
+                  }}
+                  style={[detailStyles.blockBtn, { backgroundColor: driver.isBlocked ? "#2ECC7118" : "#E74C3C18" }]}
+                >
+                  <Ionicons
+                    name={driver.isBlocked ? "lock-open-outline" : "lock-closed-outline"}
+                    size={18}
+                    color={driver.isBlocked ? "#2ECC71" : "#E74C3C"}
+                  />
+                  <Text style={[detailStyles.blockText, { color: driver.isBlocked ? "#2ECC71" : "#E74C3C" }]}>
+                    {driver.isBlocked ? "Unblock Driver" : "Block Driver"}
+                  </Text>
+                </Pressable>
+              </>
+            )}
+          />
+        </View>
+      </Modal>
+
+      <RejectReasonModal
+        visible={rejectModalVisible}
+        onClose={() => setRejectModalVisible(false)}
+        onConfirm={(reason) => {
+          rejectDriver(driver.id, reason);
+          setRejectModalVisible(false);
+          if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          onClose();
+        }}
+      />
+    </>
   );
 }
 
-function DriverCard({ driver, index, onApprove, onReject, onTap }: {
-  driver: DriverData; index: number; onApprove: (id: string) => void; onReject: (id: string) => void; onTap: (driver: DriverData) => void;
+function DriverCard({
+  driver,
+  index,
+  onApprove,
+  onReject,
+  onTap,
+}: {
+  driver: DriverData;
+  index: number;
+  onApprove: (driver: DriverData) => void;
+  onReject: (driver: DriverData) => void;
+  onTap: (driver: DriverData) => void;
 }) {
   const { colors } = useTheme();
-  const kycColors: Record<string, string> = { approved: "#2ECC71", submitted: "#F39C12", rejected: "#E74C3C", pending: "#9E9E9E" };
+
+  const verifiedCount = driver.documents.filter((d) => d.status === "verified").length;
+  const totalDocs = driver.documents.length;
+  const progress = totalDocs > 0 ? verifiedCount / totalDocs : 0;
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 60).duration(400)}>
@@ -216,45 +390,57 @@ function DriverCard({ driver, index, onApprove, onReject, onTap }: {
 
           <View style={[styles.cardBody, { borderTopColor: colors.border }]}>
             <View style={styles.infoItem}>
-              <Ionicons name="car-sport-outline" size={16} color={colors.textSecondary} />
-              <Text style={[styles.infoText, { color: colors.textSecondary }]}>{driver.vehicle}</Text>
+              <Ionicons name="car-sport-outline" size={14} color={colors.textSecondary} />
+              <Text style={[styles.infoText, { color: colors.textSecondary }]}>{driver.vehicle} · {driver.vehicleNumber}</Text>
             </View>
             <View style={styles.cardStats}>
               <View style={styles.miniStat}>
-                <Ionicons name="star" size={14} color={Colors.gold} />
+                <Ionicons name="star" size={13} color={Colors.gold} />
                 <Text style={[styles.miniStatText, { color: colors.text }]}>{driver.rating || "N/A"}</Text>
               </View>
               <View style={styles.miniStat}>
-                <Ionicons name="navigate" size={14} color={Colors.gold} />
+                <Ionicons name="navigate" size={13} color={Colors.gold} />
                 <Text style={[styles.miniStatText, { color: colors.text }]}>{driver.completedTrips} trips</Text>
-              </View>
-              <View style={styles.miniStat}>
-                <Ionicons name="wallet" size={14} color={Colors.gold} />
-                <Text style={[styles.miniStatText, { color: colors.text }]}>{"\u20B9"}{driver.totalEarnings.toLocaleString()}</Text>
               </View>
             </View>
 
-            <View style={styles.docsStatusRow}>
-              {driver.documents.map((doc) => (
-                <View key={doc.type} style={[styles.docMiniDot, { backgroundColor: statusColors[doc.status] }]} />
-              ))}
-              <Text style={[styles.docsStatusText, { color: colors.textTertiary }]}>
-                {driver.documents.filter((d) => d.status === "verified").length}/{driver.documents.length} docs
-              </Text>
+            <View style={styles.docsProgress}>
+              <View style={{ flex: 1 }}>
+                <View style={[styles.progressBg, { backgroundColor: colors.border }]}>
+                  <View style={[styles.progressFill, { width: `${progress * 100}%` as any, backgroundColor: progress === 1 ? "#2ECC71" : Colors.gold }]} />
+                </View>
+              </View>
+              <Text style={[styles.docsStatusText, { color: colors.textTertiary }]}>{verifiedCount}/{totalDocs} docs</Text>
             </View>
+
+            {driver.appliedAt ? (
+              <Text style={[styles.appliedAt, { color: colors.textTertiary }]}>Applied {driver.appliedAt}</Text>
+            ) : null}
           </View>
 
           <View style={styles.cardFooter}>
             <View style={[styles.kycBadge, { backgroundColor: (kycColors[driver.kycStatus] || "#9E9E9E") + "18" }]}>
-              <Ionicons name={driver.kycStatus === "approved" ? "checkmark-circle" : driver.kycStatus === "rejected" ? "close-circle" : "time"} size={14} color={kycColors[driver.kycStatus] || "#9E9E9E"} />
-              <Text style={[styles.kycText, { color: kycColors[driver.kycStatus] || "#9E9E9E" }]}>KYC {driver.kycStatus.charAt(0).toUpperCase() + driver.kycStatus.slice(1)}</Text>
+              <Ionicons
+                name={driver.kycStatus === "approved" ? "checkmark-circle" : driver.kycStatus === "rejected" ? "close-circle" : "time"}
+                size={13}
+                color={kycColors[driver.kycStatus] || "#9E9E9E"}
+              />
+              <Text style={[styles.kycText, { color: kycColors[driver.kycStatus] || "#9E9E9E" }]}>
+                {driver.kycStatus.charAt(0).toUpperCase() + driver.kycStatus.slice(1)}
+              </Text>
             </View>
             {driver.kycStatus === "submitted" && (
               <View style={styles.actionRow}>
-                <Pressable onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onApprove(driver.id); }} style={[styles.actionBtn, { backgroundColor: "#2ECC7118" }]}>
+                <Pressable
+                  onPress={(e) => { e.stopPropagation(); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onApprove(driver); }}
+                  style={[styles.actionBtn, { backgroundColor: "#2ECC7118" }]}
+                >
                   <Ionicons name="checkmark" size={18} color="#2ECC71" />
                 </Pressable>
-                <Pressable onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onReject(driver.id); }} style={[styles.actionBtn, { backgroundColor: "#E74C3C18" }]}>
+                <Pressable
+                  onPress={(e) => { e.stopPropagation(); if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onReject(driver); }}
+                  style={[styles.actionBtn, { backgroundColor: "#E74C3C18" }]}
+                >
                   <Ionicons name="close" size={18} color="#E74C3C" />
                 </Pressable>
               </View>
@@ -269,28 +455,50 @@ function DriverCard({ driver, index, onApprove, onReject, onTap }: {
 export default function DriversScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { drivers, updateDriverStatus } = useData();
+  const { drivers, approveDriver, rejectDriver } = useData();
   const [selectedDriver, setSelectedDriver] = useState<DriverData | null>(null);
+  const [activeTab, setActiveTab] = useState<Tab>("applications");
+  const [rejectModalVisible, setRejectModalVisible] = useState(false);
+  const [pendingRejectDriver, setPendingRejectDriver] = useState<DriverData | null>(null);
 
-  const handleApprove = (id: string) => {
-    Alert.alert("Approve KYC", "Approve this driver's KYC?", [
+  const applications = useMemo(() => drivers.filter((d) => d.kycStatus === "submitted"), [drivers]);
+  const approved = useMemo(() => drivers.filter((d) => d.kycStatus === "approved"), [drivers]);
+
+  const tabDrivers = useMemo(() => {
+    if (activeTab === "applications") return applications;
+    if (activeTab === "approved") return approved;
+    return drivers;
+  }, [activeTab, drivers, applications, approved]);
+
+  const handleApprove = (driver: DriverData) => {
+    Alert.alert("Approve KYC", `Approve ${driver.name}?`, [
       { text: "Cancel", style: "cancel" },
-      { text: "Approve", onPress: () => updateDriverStatus(id, { kycStatus: "approved" } as any) },
+      {
+        text: "Approve",
+        onPress: () => {
+          approveDriver(driver.id);
+          if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        },
+      },
     ]);
   };
 
-  const handleReject = (id: string) => {
-    Alert.alert("Reject KYC", "Reject this driver's KYC?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Reject", style: "destructive", onPress: () => updateDriverStatus(id, { kycStatus: "rejected" } as any) },
-    ]);
+  const handleReject = (driver: DriverData) => {
+    setPendingRejectDriver(driver);
+    setRejectModalVisible(true);
   };
+
+  const tabs: { key: Tab; label: string; count?: number }[] = [
+    { key: "applications", label: "Applications", count: applications.length },
+    { key: "approved", label: "Approved", count: approved.length },
+    { key: "all", label: "All", count: drivers.length },
+  ];
 
   return (
     <>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
         <FlatList
-          data={drivers}
+          data={tabDrivers}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{
             paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) + 16,
@@ -299,17 +507,82 @@ export default function DriversScreen() {
           }}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={
-            <Text style={[styles.title, { color: colors.text }]}>Manage Drivers ({drivers.length})</Text>
+            <>
+              <Text style={[styles.title, { color: colors.text }]}>Manage Drivers</Text>
+              <View style={[styles.tabBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                {tabs.map((tab) => {
+                  const isActive = activeTab === tab.key;
+                  return (
+                    <Pressable
+                      key={tab.key}
+                      onPress={() => setActiveTab(tab.key)}
+                      style={[styles.tab, isActive && { backgroundColor: Colors.gold }]}
+                    >
+                      <Text style={[styles.tabLabel, { color: isActive ? "#0A0A0A" : colors.textSecondary }]}>
+                        {tab.label}
+                      </Text>
+                      {tab.count !== undefined && tab.count > 0 && (
+                        <View style={[styles.tabBadge, { backgroundColor: isActive ? "#0A0A0A30" : Colors.gold + "30" }]}>
+                          <Text style={[styles.tabBadgeText, { color: isActive ? "#0A0A0A" : Colors.gold }]}>{tab.count}</Text>
+                        </View>
+                      )}
+                    </Pressable>
+                  );
+                })}
+              </View>
+              {tabDrivers.length === 0 && (
+                <Animated.View entering={FadeIn.duration(300)} style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  <Ionicons name={activeTab === "applications" ? "document-text-outline" : "people-outline"} size={36} color={colors.textSecondary} />
+                  <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                    {activeTab === "applications" ? "No Pending Applications" : activeTab === "approved" ? "No Approved Drivers" : "No Drivers"}
+                  </Text>
+                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                    {activeTab === "applications" ? "New driver applications will appear here." : "Approved drivers will appear here."}
+                  </Text>
+                </Animated.View>
+              )}
+            </>
           }
           renderItem={({ item, index }) => (
-            <DriverCard driver={item} index={index} onApprove={handleApprove} onReject={handleReject} onTap={setSelectedDriver} />
+            <DriverCard
+              driver={item}
+              index={index}
+              onApprove={handleApprove}
+              onReject={handleReject}
+              onTap={setSelectedDriver}
+            />
           )}
         />
       </View>
+
       <DriverDetailModal visible={!!selectedDriver} onClose={() => setSelectedDriver(null)} driver={selectedDriver} />
+
+      <RejectReasonModal
+        visible={rejectModalVisible}
+        onClose={() => { setRejectModalVisible(false); setPendingRejectDriver(null); }}
+        onConfirm={(reason) => {
+          if (pendingRejectDriver) {
+            rejectDriver(pendingRejectDriver.id, reason);
+            if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          }
+          setRejectModalVisible(false);
+          setPendingRejectDriver(null);
+        }}
+      />
     </>
   );
 }
+
+const rejectStyles = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "#00000088", justifyContent: "center", alignItems: "center", padding: 24 },
+  card: { width: "100%", borderRadius: 20, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 10 },
+  title: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 20, marginBottom: 6 },
+  subtitle: { fontFamily: "Poppins_400Regular", fontSize: 13, marginBottom: 16 },
+  input: { borderWidth: 1, borderRadius: 12, padding: 14, fontFamily: "Poppins_400Regular", fontSize: 14, minHeight: 80, marginBottom: 20 },
+  btnRow: { flexDirection: "row", gap: 12 },
+  btn: { flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: "center" },
+  btnText: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
+});
 
 const detailStyles = StyleSheet.create({
   container: { flex: 1 },
@@ -320,8 +593,12 @@ const detailStyles = StyleSheet.create({
   avatar: { width: 64, height: 64, borderRadius: 32, alignItems: "center", justifyContent: "center", marginBottom: 10 },
   avatarText: { fontFamily: "Poppins_700Bold", fontSize: 26, color: "#0A0A0A" },
   name: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 22 },
-  phone: { fontFamily: "Poppins_400Regular", fontSize: 14 },
-  statsRow: { flexDirection: "row", gap: 20, marginTop: 12 },
+  phone: { fontFamily: "Poppins_400Regular", fontSize: 14, marginBottom: 8 },
+  kycBadge: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 5, borderRadius: 10, marginBottom: 8 },
+  kycText: { fontFamily: "Poppins_500Medium", fontSize: 12 },
+  rejectionNote: { flexDirection: "row", alignItems: "flex-start", gap: 6, borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 8, maxWidth: "90%" },
+  rejectionText: { fontFamily: "Poppins_400Regular", fontSize: 12, flex: 1 },
+  statsRow: { flexDirection: "row", gap: 20, marginTop: 8 },
   statItem: { flexDirection: "row", alignItems: "center", gap: 4 },
   statValue: { fontFamily: "Poppins_500Medium", fontSize: 14 },
   infoCard: { borderRadius: 14, borderWidth: 1, padding: 16, marginBottom: 20 },
@@ -331,20 +608,33 @@ const detailStyles = StyleSheet.create({
   sectionTitle: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 18, marginBottom: 12 },
   docsCard: { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 20 },
   divider: { height: 1, marginVertical: 6 },
-  docRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 6 },
-  docDot: { width: 10, height: 10, borderRadius: 5 },
+  docRow: { flexDirection: "row", alignItems: "flex-start", gap: 10, paddingVertical: 6 },
+  docDot: { width: 10, height: 10, borderRadius: 5, marginTop: 3 },
   docLabel: { fontFamily: "Poppins_500Medium", fontSize: 13 },
-  docStatus: { fontFamily: "Poppins_400Regular", fontSize: 11 },
+  docStatus: { fontFamily: "Poppins_400Regular", fontSize: 11, marginTop: 1 },
+  docExpiry: { fontFamily: "Poppins_400Regular", fontSize: 11, marginTop: 1 },
+  docRejection: { fontFamily: "Poppins_400Regular", fontSize: 11, marginTop: 2, fontStyle: "italic" },
   docAction: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   reviewCard: { borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
   reviewComment: { fontFamily: "Poppins_400Regular", fontSize: 13 },
-  blockBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16, borderRadius: 14, marginTop: 16 },
+  kycActions: { gap: 10, marginTop: 16, marginBottom: 8 },
+  kycBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 14 },
+  kycBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
+  blockBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 16, borderRadius: 14, marginTop: 8 },
   blockText: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
 });
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  title: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 28, marginBottom: 20 },
+  title: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 28, marginBottom: 16 },
+  tabBar: { flexDirection: "row", borderRadius: 14, borderWidth: 1, padding: 4, marginBottom: 20, gap: 4 },
+  tab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 9, borderRadius: 10 },
+  tabLabel: { fontFamily: "Poppins_600SemiBold", fontSize: 12 },
+  tabBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8 },
+  tabBadgeText: { fontFamily: "Poppins_700Bold", fontSize: 11 },
+  emptyCard: { borderRadius: 18, borderWidth: 1, padding: 36, alignItems: "center", gap: 10, marginTop: 20 },
+  emptyTitle: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 18 },
+  emptyText: { fontFamily: "Poppins_400Regular", fontSize: 14, textAlign: "center" },
   card: { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 14 },
   cardHeader: { flexDirection: "row", alignItems: "center", gap: 12 },
   driverAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
@@ -356,12 +646,14 @@ const styles = StyleSheet.create({
   cardBody: { borderTopWidth: 1, marginTop: 12, paddingTop: 12, gap: 6 },
   infoItem: { flexDirection: "row", alignItems: "center", gap: 8 },
   infoText: { fontFamily: "Poppins_400Regular", fontSize: 13 },
-  cardStats: { flexDirection: "row", gap: 16, marginTop: 4 },
+  cardStats: { flexDirection: "row", gap: 16, marginTop: 2 },
   miniStat: { flexDirection: "row", alignItems: "center", gap: 4 },
   miniStatText: { fontFamily: "Poppins_500Medium", fontSize: 12 },
-  docsStatusRow: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 },
-  docMiniDot: { width: 8, height: 8, borderRadius: 4 },
-  docsStatusText: { fontFamily: "Poppins_400Regular", fontSize: 11, marginLeft: 4 },
+  docsProgress: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
+  progressBg: { height: 4, borderRadius: 2, overflow: "hidden" },
+  progressFill: { height: 4, borderRadius: 2 },
+  docsStatusText: { fontFamily: "Poppins_400Regular", fontSize: 11 },
+  appliedAt: { fontFamily: "Poppins_400Regular", fontSize: 11, marginTop: 2 },
   cardFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 12 },
   kycBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 8 },
   kycText: { fontFamily: "Poppins_500Medium", fontSize: 12 },

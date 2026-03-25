@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserData, DriverData } from "@/constants/data";
+import { notifyDriverRegistered } from "@/services/driverBridge";
 
 interface RegisterDriverPayload {
   name: string;
@@ -170,6 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const pendingList: DriverData[] = existing ? JSON.parse(existing) : [];
     pendingList.push(newDriver);
     await AsyncStorage.setItem("@safargo_pending_drivers", JSON.stringify(pendingList));
+
+    notifyDriverRegistered(newDriver);
 
     return true;
   };
