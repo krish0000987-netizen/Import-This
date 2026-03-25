@@ -28,6 +28,12 @@ import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { DriverData } from "@/constants/data";
+import {
+  connectSocket,
+  emitJoinRideRoom,
+  emitDriverReachedPickup,
+  emitDriverSubmitOtp,
+} from "@/services/socketService";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
@@ -75,8 +81,38 @@ export default function DriverTripScreen() {
 
   useEffect(() => {
     if (rideId) fetchRide();
+
+    // Connect socket and join the ride room as driver
+    const socket = connectSocket();
+    if (rideId) emitJoinRideRoom(rideId, "driver");
+
+    // Server tells driver to show OTP entry modal (after driverReachedPickup)
+    socket.on("showOtpEntry", () => {
+      setShowOtpModal(true);
+      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    });
+
+    // OTP verified by server → start trip
+    socket.on("otpVerified", () => {
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowOtpModal(false);
+      setOtpInput("");
+      setOtpError(false);
+      setTripStatus("started");
+    });
+
+    // OTP rejected by server → show error
+    socket.on("otpRejected", ({ message }: { message: string }) => {
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      triggerShake();
+      setOtpError(true);
+    });
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      socket.off("showOtpEntry");
+      socket.off("otpVerified");
+      socket.off("otpRejected");
     };
   }, [rideId]);
 
@@ -113,41 +149,21 @@ export default function DriverTripScreen() {
   const handleArrivedAtPickup = () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setTripStatus("arrived");
+    // Notify server → server generates OTP → sends to customer + opens OTP modal here
+    if (rideId) emitDriverReachedPickup(rideId);
   };
 
-  const handleVerifyOtp = async () => {
+  const handleVerifyOtp = () => {
     if (otpInput.length !== 4) {
       triggerShake();
       setOtpError(true);
       return;
     }
-
+    // Send OTP to server via socket → server validates and emits otpVerified or otpRejected
     setOtpLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/rides/${rideId}/verify-otp`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ otp: otpInput }),
-      });
-      const data = await res.json();
-
-      if (data.valid) {
-        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setShowOtpModal(false);
-        setOtpInput("");
-        setOtpError(false);
-        setTripStatus("started");
-      } else {
-        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-        triggerShake();
-        setOtpError(true);
-      }
-    } catch {
-      triggerShake();
-      setOtpError(true);
-    } finally {
-      setOtpLoading(false);
-    }
+    if (rideId) emitDriverSubmitOtp(rideId, otpInput);
+    // Result handled by socket.on("otpVerified") and socket.on("otpRejected") in useEffect
+    setTimeout(() => setOtpLoading(false), 3000); // safety timeout
   };
 
   const handleEndTrip = () => {

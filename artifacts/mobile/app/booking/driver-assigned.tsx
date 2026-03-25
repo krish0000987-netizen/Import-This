@@ -7,7 +7,7 @@ import {
   Platform,
   ScrollView,
   Animated as RNAnimated,
-  TextInput,
+  Alert,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,6 +16,10 @@ import * as Haptics from "expo-haptics";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown, FadeInUp, ZoomIn } from "react-native-reanimated";
 import Colors from "@/constants/colors";
+import {
+  connectSocket,
+  emitJoinRideRoom,
+} from "@/services/socketService";
 
 const DRIVERS = [
   {
@@ -74,7 +78,6 @@ export default function DriverAssigned() {
     couponDiscount?: string;
     bookingId?: string;
     otp?: string;
-    // Socket-matched driver data (may be present)
     driverName?: string;
     driverVehicle?: string;
     driverVehicleNumber?: string;
@@ -85,7 +88,6 @@ export default function DriverAssigned() {
 
   const insets = useSafeAreaInsets();
 
-  // Use real socket-matched driver if available, otherwise fall back to DRIVERS list
   const fallbackDriver = useRef(DRIVERS[Math.floor(Math.random() * DRIVERS.length)]).current;
   const driver = useRef({
     name: params.driverName || fallbackDriver.name,
@@ -98,18 +100,20 @@ export default function DriverAssigned() {
     trips: fallbackDriver.trips,
   }).current;
 
-  const serverOtp = params.otp || String(Math.floor(1000 + Math.random() * 9000));
+  const rideId = params.bookingId || `SG${Date.now().toString().slice(-6)}`;
 
   const [etaMin, setEtaMin] = useState(driver.eta);
-  const [otpRevealed, setOtpRevealed] = useState(false);
-  const [enteredOtp, setEnteredOtp] = useState("");
-  const [otpError, setOtpError] = useState("");
-  const [otpVerified, setOtpVerified] = useState(false);
+
+  // OTP state: null = waiting for driver to arrive; string = OTP ready to show
+  const [liveOtp, setLiveOtp] = useState<string | null>(null);
+
+  // Ride started by driver verifying OTP
+  const [rideStarted, setRideStarted] = useState(false);
 
   const pulseBadge = useRef(new RNAnimated.Value(1)).current;
   const carMoveX = useRef(new RNAnimated.Value(0)).current;
   const carMoveY = useRef(new RNAnimated.Value(0)).current;
-  const shakeAnim = useRef(new RNAnimated.Value(0)).current;
+  const otpPulse = useRef(new RNAnimated.Value(1)).current;
 
   useEffect(() => {
     if (Platform.OS !== "web") {
@@ -136,7 +140,6 @@ export default function DriverAssigned() {
       ])
     ).start();
 
-    const otpTimer = setTimeout(() => setOtpRevealed(true), 900);
     const etaInterval = setInterval(() => {
       setEtaMin((prev) => {
         if (prev <= 1) { clearInterval(etaInterval); return 1; }
@@ -144,62 +147,69 @@ export default function DriverAssigned() {
       });
     }, 60000);
 
+    // Real-time socket: join ride room as customer
+    const socket = connectSocket();
+    emitJoinRideRoom(rideId, "customer");
+
+    // Driver arrived → server sends OTP
+    socket.on("rideOtpReady", ({ otp }: { otp: string }) => {
+      setLiveOtp(otp);
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      // Pulse animation for OTP reveal
+      RNAnimated.sequence([
+        RNAnimated.timing(otpPulse, { toValue: 1.12, duration: 300, useNativeDriver: true }),
+        RNAnimated.timing(otpPulse, { toValue: 1, duration: 300, useNativeDriver: true }),
+      ]).start();
+    });
+
+    // Driver entered correct OTP → ride starts for both
+    socket.on("otpVerified", () => {
+      setRideStarted(true);
+      if (Platform.OS !== "web") {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+      // Navigate to confirmed screen after brief celebration delay
+      setTimeout(() => {
+        router.replace({
+          pathname: "/booking/confirmed",
+          params: {
+            bookingId: rideId,
+            destination: params.destination,
+            pickup: params.pickup,
+            date: new Date().toISOString().split("T")[0],
+            time: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
+            vehicle: params.vehicleType || "sedan",
+            passengers: "1",
+            fare: params.fare,
+            originalFare: params.originalFare,
+            couponCode: params.couponCode,
+            couponDiscount: params.couponDiscount,
+            distanceKm: params.distanceKm,
+            driverName: driver.name,
+            driverPhone: driver.phone,
+            driverRating: String(driver.rating),
+            driverVehicle: driver.vehicle,
+            driverVehicleNumber: driver.vehicleNumber,
+          },
+        });
+      }, 1800);
+    });
+
+    socket.on("rideCancelled", () => {
+      Alert.alert("Ride Cancelled", "Your ride has been cancelled.", [
+        { text: "OK", onPress: () => router.replace("/customer") },
+      ]);
+    });
+
     return () => {
-      clearTimeout(otpTimer);
       clearInterval(etaInterval);
+      socket.off("rideOtpReady");
+      socket.off("otpVerified");
+      socket.off("rideCancelled");
     };
   }, []);
-
-  const shakeError = () => {
-    RNAnimated.sequence([
-      RNAnimated.timing(shakeAnim, { toValue: 8, duration: 60, useNativeDriver: true }),
-      RNAnimated.timing(shakeAnim, { toValue: -8, duration: 60, useNativeDriver: true }),
-      RNAnimated.timing(shakeAnim, { toValue: 6, duration: 60, useNativeDriver: true }),
-      RNAnimated.timing(shakeAnim, { toValue: -6, duration: 60, useNativeDriver: true }),
-      RNAnimated.timing(shakeAnim, { toValue: 0, duration: 60, useNativeDriver: true }),
-    ]).start();
-  };
-
-  const handleVerifyOtp = () => {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (enteredOtp.trim() === serverOtp) {
-      setOtpVerified(true);
-      setOtpError("");
-      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else {
-      setOtpError("Incorrect OTP. Please try again.");
-      shakeError();
-      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    }
-  };
-
-  const handleStartTrip = () => {
-    if (Platform.OS !== "web") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-    router.replace({
-      pathname: "/booking/confirmed",
-      params: {
-        bookingId: params.bookingId || `SG${Date.now().toString().slice(-6)}`,
-        destination: params.destination,
-        pickup: params.pickup,
-        date: new Date().toISOString().split("T")[0],
-        time: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }),
-        vehicle: params.vehicleType || "sedan",
-        passengers: "1",
-        fare: params.fare,
-        originalFare: params.originalFare,
-        couponCode: params.couponCode,
-        couponDiscount: params.couponDiscount,
-        distanceKm: params.distanceKm,
-        driverName: driver.name,
-        driverPhone: driver.phone,
-        driverRating: String(driver.rating),
-        driverVehicle: driver.vehicle,
-        driverVehicleNumber: driver.vehicleNumber,
-      },
-    });
-  };
 
   return (
     <View style={styles.container}>
@@ -212,29 +222,30 @@ export default function DriverAssigned() {
           paddingHorizontal: 20,
         }}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
       >
         {/* Assigned badge */}
         <Animated.View entering={ZoomIn.delay(100).duration(500)} style={{ alignItems: "center", marginBottom: 18 }}>
-          <LinearGradient
-            colors={[Colors.gold + "35", Colors.gold + "12"]}
-            style={styles.assignedBadge}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Ionicons name="checkmark-circle" size={20} color={Colors.gold} />
-            <Text style={styles.assignedText}>Driver Assigned!</Text>
-          </LinearGradient>
+          <RNAnimated.View style={{ transform: [{ scale: pulseBadge }] }}>
+            <LinearGradient
+              colors={[Colors.gold + "28", Colors.gold + "12"]}
+              style={styles.assignedBadge}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Ionicons name="checkmark-circle" size={20} color={Colors.gold} />
+              <Text style={styles.assignedText}>Driver Assigned!</Text>
+            </LinearGradient>
+          </RNAnimated.View>
         </Animated.View>
 
-        {/* Mini map */}
-        <Animated.View entering={FadeInDown.delay(150).duration(500)} style={styles.mapCard}>
-          <LinearGradient colors={["#191914", "#141410"]} style={styles.mapInner}>
-            {[15, 30, 45, 60, 75].map((pct) => (
-              <View key={`h${pct}`} style={[styles.gridH, { top: `${pct}%` }]} />
+        {/* Route map card */}
+        <Animated.View entering={FadeInDown.delay(80).duration(500)}>
+          <View style={styles.mapCard}>
+            {[40, 80, 120].map((top) => (
+              <View key={top} style={[styles.gridH, { top }]} />
             ))}
-            {[15, 30, 45, 60, 75].map((pct) => (
-              <View key={`v${pct}`} style={[styles.gridV, { left: `${pct}%` }]} />
+            {[60, 120, 180, 240].map((left) => (
+              <View key={left} style={[styles.gridV, { left }]} />
             ))}
             <View style={styles.routeLine} />
             <View style={styles.pickupMarker}>
@@ -242,48 +253,49 @@ export default function DriverAssigned() {
             </View>
             <View style={styles.dropMarker} />
             <RNAnimated.View
-              style={[
-                styles.movingCar,
-                { transform: [{ translateX: carMoveX }, { translateY: carMoveY }] },
-              ]}
+              style={[styles.movingCar, { transform: [{ translateX: carMoveX }, { translateY: carMoveY }] }]}
             >
-              <Text style={{ fontSize: 28 }}>🚗</Text>
+              <Ionicons name="car" size={22} color={Colors.gold} />
             </RNAnimated.View>
             <View style={styles.mapEtaBadge}>
               <View style={styles.mapEtaDot} />
               <Text style={styles.mapEtaText}>{etaMin} min away</Text>
             </View>
-          </LinearGradient>
+          </View>
         </Animated.View>
 
-        {/* Driver card */}
-        <Animated.View entering={FadeInDown.delay(250).duration(500)} style={styles.driverCard}>
+        {/* Driver info card */}
+        <Animated.View entering={FadeInDown.delay(160).duration(500)} style={styles.driverCard}>
           <View style={styles.driverTop}>
-            <RNAnimated.View style={{ transform: [{ scale: pulseBadge }] }}>
-              <LinearGradient
-                colors={[Colors.gold + "30", Colors.gold + "10"]}
-                style={styles.avatar}
-              >
-                <Ionicons name="person" size={30} color={Colors.gold} />
-              </LinearGradient>
-            </RNAnimated.View>
+            <LinearGradient
+              colors={[Colors.gold + "30", Colors.gold + "15"]}
+              style={styles.avatar}
+            >
+              <Ionicons name="person" size={28} color={Colors.gold} />
+            </LinearGradient>
 
             <View style={{ flex: 1 }}>
               <Text style={styles.driverName}>{driver.name}</Text>
               <View style={styles.ratingRow}>
                 <Ionicons name="star" size={13} color={Colors.gold} />
-                <Text style={styles.ratingText}>{driver.rating.toFixed(1)}</Text>
+                <Text style={styles.ratingText}>{driver.rating}</Text>
                 <View style={styles.sep} />
                 <Text style={styles.driverVehicle}>{driver.vehicle}</Text>
               </View>
               <Text style={styles.vehicleNum}>{driver.vehicleNumber}</Text>
             </View>
 
-            <View style={{ gap: 8 }}>
-              <Pressable style={[styles.actionBtn, { backgroundColor: "#2ECC7118" }]}>
-                <Ionicons name="call" size={17} color="#2ECC71" />
+            <View style={{ gap: 10 }}>
+              <Pressable
+                style={[styles.actionBtn, { backgroundColor: "#3498DB18" }]}
+                onPress={() => Alert.alert("Call Driver", `Calling ${driver.name}...`)}
+              >
+                <Ionicons name="call" size={19} color="#3498DB" />
               </Pressable>
-              <Pressable style={[styles.actionBtn, { backgroundColor: Colors.gold + "18" }]}>
+              <Pressable
+                style={[styles.actionBtn, { backgroundColor: Colors.gold + "18" }]}
+                onPress={() => Alert.alert("Message Driver", "In-app messaging coming soon.")}
+              >
                 <Ionicons name="chatbubble" size={17} color={Colors.gold} />
               </Pressable>
             </View>
@@ -291,27 +303,38 @@ export default function DriverAssigned() {
 
           <View style={styles.statsBar}>
             <View style={styles.driverStat}>
-              <Ionicons name="navigate" size={13} color={Colors.gold} />
-              <Text style={styles.driverStatVal}>{driver.distKm} km</Text>
-              <Text style={styles.driverStatLbl}>from you</Text>
+              <Text style={styles.driverStatVal}>{driver.rating}</Text>
+              <Text style={styles.driverStatLbl}>Rating</Text>
             </View>
             <View style={styles.statDiv} />
             <View style={styles.driverStat}>
-              <Ionicons name="time" size={13} color={Colors.gold} />
-              <Text style={styles.driverStatVal}>{etaMin} min</Text>
-              <Text style={styles.driverStatLbl}>ETA</Text>
-            </View>
-            <View style={styles.statDiv} />
-            <View style={styles.driverStat}>
-              <Ionicons name="car" size={13} color={Colors.gold} />
               <Text style={styles.driverStatVal}>{driver.trips.toLocaleString()}</Text>
-              <Text style={styles.driverStatLbl}>trips</Text>
+              <Text style={styles.driverStatLbl}>Trips</Text>
+            </View>
+            <View style={styles.statDiv} />
+            <View style={styles.driverStat}>
+              <Text style={styles.driverStatVal}>{driver.distKm} km</Text>
+              <Text style={styles.driverStatLbl}>Away</Text>
             </View>
           </View>
         </Animated.View>
 
-        {/* OTP display card */}
-        {otpRevealed && (
+        {/* OTP Section */}
+        {!liveOtp && !rideStarted && (
+          <Animated.View entering={FadeInDown.delay(240).duration(500)} style={styles.waitingCard}>
+            <View style={styles.waitingIconWrap}>
+              <Ionicons name="time-outline" size={28} color={Colors.gold} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.waitingTitle}>Driver is on the way</Text>
+              <Text style={styles.waitingSub}>
+                Your OTP will appear here once your driver arrives at the pickup point
+              </Text>
+            </View>
+          </Animated.View>
+        )}
+
+        {liveOtp && !rideStarted && (
           <Animated.View entering={ZoomIn.delay(0).duration(600)} style={styles.otpCard}>
             <View style={styles.otpHeader}>
               <View style={styles.otpShield}>
@@ -320,18 +343,18 @@ export default function DriverAssigned() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.otpTitle}>Your Ride OTP</Text>
                 <Text style={styles.otpSub}>
-                  Share this 4-digit code with your driver
+                  Show this to your driver. They will enter it to start the ride.
                 </Text>
               </View>
             </View>
 
-            <View style={styles.otpDigitsRow}>
-              {serverOtp.split("").map((digit, i) => (
+            <RNAnimated.View style={[styles.otpDigitsRow, { transform: [{ scale: otpPulse }] }]}>
+              {liveOtp.split("").map((digit, i) => (
                 <View key={i} style={styles.otpBox}>
                   <Text style={styles.otpDigit}>{digit}</Text>
                 </View>
               ))}
-            </View>
+            </RNAnimated.View>
 
             <View style={styles.otpNote}>
               <Ionicons name="lock-closed-outline" size={13} color={Colors.gold} />
@@ -339,65 +362,22 @@ export default function DriverAssigned() {
                 Never share your OTP with anyone other than your assigned driver
               </Text>
             </View>
+
+            <View style={styles.driverVerifyRow}>
+              <Ionicons name="keypad-outline" size={15} color="rgba(255,255,255,0.35)" />
+              <Text style={styles.driverVerifyText}>
+                Waiting for driver to enter OTP…
+              </Text>
+            </View>
           </Animated.View>
         )}
 
-        {/* OTP verification input */}
-        {otpRevealed && !otpVerified && (
-          <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.verifyCard}>
-            <Text style={styles.verifyTitle}>Confirm Driver Verified OTP</Text>
-            <Text style={styles.verifySub}>
-              After sharing, confirm here once your driver acknowledges
-            </Text>
-
-            <RNAnimated.View
-              style={[
-                styles.otpInputRow,
-                { transform: [{ translateX: shakeAnim }] },
-                otpError ? styles.otpInputRowError : null,
-              ]}
-            >
-              <Ionicons name="keypad-outline" size={18} color="rgba(255,255,255,0.4)" />
-              <TextInput
-                style={styles.otpInput}
-                value={enteredOtp}
-                onChangeText={(t) => {
-                  setEnteredOtp(t.replace(/\D/g, "").slice(0, 4));
-                  if (otpError) setOtpError("");
-                }}
-                placeholder="Enter 4-digit OTP"
-                placeholderTextColor="rgba(255,255,255,0.2)"
-                keyboardType="number-pad"
-                maxLength={4}
-                returnKeyType="done"
-                onSubmitEditing={handleVerifyOtp}
-              />
-              {enteredOtp.length === 4 && (
-                <Pressable
-                  onPress={handleVerifyOtp}
-                  style={[styles.verifyBtn, { backgroundColor: Colors.gold + "25" }]}
-                >
-                  <Text style={styles.verifyBtnText}>Verify</Text>
-                </Pressable>
-              )}
-            </RNAnimated.View>
-
-            {otpError !== "" && (
-              <View style={styles.otpErrorRow}>
-                <Ionicons name="alert-circle" size={14} color="#E74C3C" />
-                <Text style={styles.otpErrorText}>{otpError}</Text>
-              </View>
-            )}
-          </Animated.View>
-        )}
-
-        {/* OTP verified state */}
-        {otpVerified && (
+        {rideStarted && (
           <Animated.View entering={ZoomIn.delay(0).duration(500)} style={styles.verifiedCard}>
-            <Ionicons name="checkmark-circle" size={26} color="#2ECC71" />
+            <Ionicons name="checkmark-circle" size={30} color="#2ECC71" />
             <View style={{ flex: 1 }}>
-              <Text style={styles.verifiedTitle}>OTP Verified!</Text>
-              <Text style={styles.verifiedSub}>Your driver is ready. Tap Start Trip to begin.</Text>
+              <Text style={styles.verifiedTitle}>Ride Started!</Text>
+              <Text style={styles.verifiedSub}>OTP verified. Your trip is underway. Enjoy the ride!</Text>
             </View>
           </Animated.View>
         )}
@@ -417,33 +397,23 @@ export default function DriverAssigned() {
             {params.fare ? `₹${parseInt(params.fare).toLocaleString()}` : "—"}
           </Text>
         </View>
-        <Pressable
-          onPress={otpVerified ? handleStartTrip : handleVerifyOtp}
-          style={({ pressed }) => [
-            styles.startBtn,
-            { opacity: pressed ? 0.88 : 1 },
-          ]}
-        >
-          <LinearGradient
-            colors={
-              otpVerified
-                ? ["#2ECC71", "#27AE60"]
-                : [Colors.gold, Colors.goldDark]
-            }
-            style={styles.startGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Ionicons
-              name={otpVerified ? "flag" : "checkmark-circle-outline"}
-              size={19}
-              color="#0A0A0A"
-            />
-            <Text style={styles.startText}>
-              {otpVerified ? "Start Trip" : "Verify & Start"}
-            </Text>
-          </LinearGradient>
-        </Pressable>
+
+        {rideStarted ? (
+          <View style={[styles.startBtn, { backgroundColor: "#2ECC7120", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 16, flexDirection: "row", alignItems: "center", gap: 8 }]}>
+            <Ionicons name="checkmark-circle" size={19} color="#2ECC71" />
+            <Text style={[styles.startText, { color: "#2ECC71" }]}>Trip Underway</Text>
+          </View>
+        ) : liveOtp ? (
+          <View style={[styles.startBtn, { backgroundColor: Colors.gold + "18", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 16, flexDirection: "row", alignItems: "center", gap: 8 }]}>
+            <Ionicons name="keypad-outline" size={19} color={Colors.gold} />
+            <Text style={[styles.startText, { color: Colors.gold }]}>Verifying OTP…</Text>
+          </View>
+        ) : (
+          <View style={[styles.startBtn, { backgroundColor: "#ffffff10", borderRadius: 14, paddingHorizontal: 22, paddingVertical: 16, flexDirection: "row", alignItems: "center", gap: 8 }]}>
+            <Ionicons name="time-outline" size={19} color="rgba(255,255,255,0.35)" />
+            <Text style={[styles.startText, { color: "rgba(255,255,255,0.35)" }]}>Awaiting Driver</Text>
+          </View>
+        )}
       </Animated.View>
     </View>
   );
@@ -460,8 +430,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
   },
   assignedText: { fontFamily: "Poppins_600SemiBold", fontSize: 15, color: Colors.gold },
-  mapCard: { height: 195, borderRadius: 18, overflow: "hidden", marginBottom: 14 },
-  mapInner: { flex: 1 },
+  mapCard: { height: 195, borderRadius: 18, overflow: "hidden", marginBottom: 14, backgroundColor: "#111108" },
   gridH: {
     position: "absolute",
     left: 0,
@@ -577,13 +546,39 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.08)",
     alignSelf: "stretch",
   },
+  waitingCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    backgroundColor: "#141410",
+    borderRadius: 18,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.07)",
+    marginBottom: 14,
+  },
+  waitingIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: Colors.gold + "15",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  waitingTitle: { fontFamily: "Poppins_600SemiBold", fontSize: 15, color: "#fff", marginBottom: 4 },
+  waitingSub: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 12,
+    color: "rgba(255,255,255,0.38)",
+    lineHeight: 18,
+  },
   otpCard: {
     backgroundColor: "#141410",
     borderRadius: 18,
     padding: 20,
     gap: 18,
     borderWidth: 1,
-    borderColor: Colors.gold + "25",
+    borderColor: Colors.gold + "35",
     marginBottom: 14,
   },
   otpHeader: { flexDirection: "row", alignItems: "flex-start", gap: 14 },
@@ -610,7 +605,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: "#0A0A0A",
     borderWidth: 2,
-    borderColor: Colors.gold + "60",
+    borderColor: Colors.gold + "70",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -630,61 +625,17 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 16,
   },
-  verifyCard: {
-    backgroundColor: "#141410",
-    borderRadius: 18,
-    padding: 18,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-    marginBottom: 14,
-  },
-  verifyTitle: { fontFamily: "Poppins_600SemiBold", fontSize: 15, color: "#fff" },
-  verifySub: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 12,
-    color: "rgba(255,255,255,0.38)",
-    lineHeight: 18,
-  },
-  otpInputRow: {
+  driverVerifyRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    backgroundColor: "#1a1a14",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  otpInputRowError: {
-    borderColor: "#E74C3C60",
-  },
-  otpInput: {
-    flex: 1,
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 22,
-    color: "#fff",
-    letterSpacing: 8,
-    padding: 0,
-  },
-  verifyBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  verifyBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: Colors.gold },
-  otpErrorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
+    gap: 8,
     paddingHorizontal: 4,
   },
-  otpErrorText: {
+  driverVerifyText: {
     fontFamily: "Poppins_400Regular",
     fontSize: 12,
-    color: "#E74C3C",
-    flex: 1,
+    color: "rgba(255,255,255,0.35)",
+    fontStyle: "italic",
   },
   verifiedCard: {
     flexDirection: "row",
@@ -725,12 +676,5 @@ const styles = StyleSheet.create({
   },
   bottomFare: { fontFamily: "Poppins_700Bold", fontSize: 28, color: Colors.gold },
   startBtn: { borderRadius: 14, overflow: "hidden" },
-  startGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 22,
-    paddingVertical: 16,
-  },
   startText: { fontFamily: "Poppins_600SemiBold", fontSize: 15, color: "#0A0A0A" },
 });

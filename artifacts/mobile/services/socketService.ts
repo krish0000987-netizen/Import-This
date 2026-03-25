@@ -10,8 +10,8 @@ export function connectSocket(): Socket {
   if (!socket || !socket.connected) {
     socket = io(SOCKET_URL, {
       transports: ["websocket"],
-      reconnectionAttempts: 3,
-      timeout: 5000,
+      reconnectionAttempts: 5,
+      timeout: 8000,
     });
   }
   return socket;
@@ -22,6 +22,10 @@ export function disconnectSocket() {
     socket.disconnect();
     socket = null;
   }
+}
+
+export function getSocket(): Socket | null {
+  return socket;
 }
 
 export function emitFindDriver(payload: {
@@ -48,14 +52,31 @@ export function emitDriverOffline(driverId: string) {
   if (socket) socket.emit("driverOffline", { driverId });
 }
 
-export function emitAcceptRide(payload: { rideId: string; driverId: string }) {
-  if (socket) socket.emit("acceptRide", payload);
+export function emitAcceptRide(rideId: string, driverId: string) {
+  if (socket) socket.emit("acceptRide", { rideId, driverId });
 }
 
-export function emitRejectRide(payload: { rideId: string; driverId: string }) {
-  if (socket) socket.emit("rejectRide", payload);
+export function emitRejectRide(rideId: string, driverId: string) {
+  if (socket) socket.emit("rejectRide", { rideId, driverId });
 }
 
-export function emitRegisterPushToken(payload: { driverId: string; token: string }) {
-  if (socket) socket.emit("registerPushToken", payload);
+export function emitRegisterPushToken(driverId: string, token: string) {
+  if (socket) socket.emit("registerPushToken", { driverId, token });
+}
+
+// ── OTP Flow ──────────────────────────────────────────────────────────────
+
+/** Join a ride room so real-time events can be received. Call on both sides. */
+export function emitJoinRideRoom(rideId: string, role: "customer" | "driver") {
+  if (socket) socket.emit("joinRideRoom", { rideId, role });
+}
+
+/** Driver: notify server they have arrived at pickup → triggers OTP generation */
+export function emitDriverReachedPickup(rideId: string) {
+  if (socket) socket.emit("driverReachedPickup", { rideId });
+}
+
+/** Driver: submit the OTP they read from the customer's screen */
+export function emitDriverSubmitOtp(rideId: string, otp: string) {
+  if (socket) socket.emit("driverSubmitOtp", { rideId, otp });
 }
