@@ -204,8 +204,31 @@ function formatOlaName(p: OlaPlace): { main: string; sub: string } {
 
 function getOlaPlaceState(p: OlaPlace): string | undefined {
   const sub = p.sub || "";
-  const parts = sub.split(",").map((s) => s.trim());
-  return parts[parts.length - 1] || undefined;
+  const parts = sub.split(",").map((s) => s.trim()).filter(Boolean);
+  // Indian addresses end with: "..., State, India" — skip trailing "India"
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i];
+    if (part.toLowerCase() !== "india" && part.length > 2) return part;
+  }
+  return undefined;
+}
+
+async function fetchStateFromCoords(lat: number, lng: number): Promise<string | undefined> {
+  try {
+    const data = await safeFetchJson(`${API_BASE}/api/ola/reverse?lat=${lat}&lon=${lng}`);
+    if (!data) return undefined;
+    const results: any[] = data.results || data.geocodingResults || [];
+    const first = results[0];
+    if (!first) return undefined;
+    const comps: any[] = first.address_components || [];
+    for (const c of comps) {
+      const types: string[] = c.types || [];
+      if (types.includes("administrative_area_level_1")) return c.long_name as string;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function SearchModal({
@@ -344,9 +367,14 @@ function SearchModal({
     setTimeout(() => destRef.current?.focus(), 200);
   };
 
-  const handleSelectOlaPickup = (p: OlaPlace) => {
+  const handleSelectOlaPickup = async (p: OlaPlace) => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const state = getOlaPlaceState(p);
+    // Step 1: try to read state from the sub-text
+    let state = getOlaPlaceState(p);
+    // Step 2: if ambiguous (state missing), confirm via reverse geocode on coords
+    if (!state && p.lat && p.lng) {
+      state = await fetchStateFromCoords(p.lat, p.lng);
+    }
     if (!isStateSupported(state)) {
       setUnavailableLocationName(p.name + (state ? `, ${state}` : ""));
       setShowUnavailable(true);
@@ -363,7 +391,12 @@ function SearchModal({
 
   const handleSelectOlaDest = async (p: OlaPlace) => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const state = getOlaPlaceState(p);
+    // Step 1: try to read state from the sub-text
+    let state = getOlaPlaceState(p);
+    // Step 2: if ambiguous (state missing), confirm via reverse geocode on coords
+    if (!state && p.lat && p.lng) {
+      state = await fetchStateFromCoords(p.lat, p.lng);
+    }
     if (!isStateSupported(state)) {
       setUnavailableLocationName(p.name + (state ? `, ${state}` : ""));
       setShowUnavailable(true);
