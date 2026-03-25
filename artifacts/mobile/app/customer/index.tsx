@@ -252,6 +252,7 @@ function SearchModal({
   const destTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showUnavailable, setShowUnavailable] = useState(false);
   const [unavailableLocationName, setUnavailableLocationName] = useState("");
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -400,17 +401,83 @@ function SearchModal({
     }
   };
 
-  const handleUseCurrentLocation = () => {
+  const handleUseCurrentLocation = async () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onPickupChange("Current Location");
-    if (userLat && userLon) {
-      setLocalPickupLat(userLat);
-      setLocalPickupLon(userLon);
+    setIsFetchingLocation(true);
+    try {
+      if (Platform.OS === "web") {
+        if (navigator.geolocation) {
+          await new Promise<void>((resolve) => {
+            navigator.geolocation.getCurrentPosition(
+              async (pos) => {
+                const coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+                setLocalPickupLat(coords.latitude);
+                setLocalPickupLon(coords.longitude);
+                try {
+                  const label = await fetchOlaReverseGeocode(coords.latitude, coords.longitude);
+                  onPickupChange(label || "Current Location");
+                } catch {
+                  onPickupChange("Current Location");
+                }
+                resolve();
+              },
+              () => {
+                if (userLat && userLon) { setLocalPickupLat(userLat); setLocalPickupLon(userLon); }
+                onPickupChange("Current Location");
+                resolve();
+              },
+              { timeout: 8000, enableHighAccuracy: false }
+            );
+          });
+        } else {
+          if (userLat && userLon) { setLocalPickupLat(userLat); setLocalPickupLon(userLon); }
+          onPickupChange("Current Location");
+        }
+      } else {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          if (userLat && userLon) { setLocalPickupLat(userLat); setLocalPickupLon(userLon); }
+          onPickupChange("Current Location");
+        } else {
+          let coords: { latitude: number; longitude: number } | null = null;
+          try {
+            const pos = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
+            coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+          } catch {
+            const last = await Location.getLastKnownPositionAsync({}).catch(() => null);
+            if (last) coords = { latitude: last.coords.latitude, longitude: last.coords.longitude };
+          }
+          if (coords) {
+            setLocalPickupLat(coords.latitude);
+            setLocalPickupLon(coords.longitude);
+            try {
+              const [address] = await Location.reverseGeocodeAsync(coords);
+              const label = address
+                ? [address.name, address.street, address.city || address.subregion]
+                    .filter(Boolean).slice(0, 2).join(", ")
+                : null;
+              onPickupChange(label || "Current Location");
+            } catch {
+              onPickupChange("Current Location");
+            }
+          } else {
+            if (userLat && userLon) { setLocalPickupLat(userLat); setLocalPickupLon(userLon); }
+            onPickupChange("Current Location");
+          }
+        }
+      }
+    } catch {
+      if (userLat && userLon) { setLocalPickupLat(userLat); setLocalPickupLon(userLon); }
+      onPickupChange("Current Location");
+    } finally {
+      setIsFetchingLocation(false);
+      setPickupQuery("");
+      setPickupSuggestions([]);
+      setActiveField("destination");
+      setTimeout(() => destRef.current?.focus(), 200);
     }
-    setPickupQuery("");
-    setPickupSuggestions([]);
-    setActiveField("destination");
-    setTimeout(() => destRef.current?.focus(), 200);
   };
 
   return (
@@ -504,20 +571,26 @@ function SearchModal({
           {activeField === "pickup" ? (
             <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
               <Pressable
-                onPress={handleUseCurrentLocation}
+                onPress={isFetchingLocation ? undefined : handleUseCurrentLocation}
                 style={({ pressed }) => [
                   searchStyles.currentLocRow,
-                  { backgroundColor: pressed ? colors.surface : "transparent" },
+                  { backgroundColor: pressed && !isFetchingLocation ? colors.surface : "transparent", opacity: isFetchingLocation ? 0.7 : 1 },
                 ]}
               >
                 <View style={[searchStyles.currentLocIcon, { backgroundColor: "#E3F2FD" }]}>
-                  <Ionicons name="navigate" size={18} color="#1976D2" />
+                  {isFetchingLocation
+                    ? <ActivityIndicator size="small" color="#1976D2" />
+                    : <Ionicons name="navigate" size={18} color="#1976D2" />}
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[searchStyles.currentLocTitle, { color: "#1976D2" }]}>Use Current Location</Text>
-                  <Text style={[searchStyles.currentLocSub, { color: colors.textSecondary }]}>Detect via GPS</Text>
+                  <Text style={[searchStyles.currentLocTitle, { color: "#1976D2" }]}>
+                    {isFetchingLocation ? "Detecting location…" : "Use Current Location"}
+                  </Text>
+                  <Text style={[searchStyles.currentLocSub, { color: colors.textSecondary }]}>
+                    {isFetchingLocation ? "Please wait" : "Detect via GPS"}
+                  </Text>
                 </View>
-                <Ionicons name="locate-outline" size={18} color="#1976D2" />
+                {!isFetchingLocation && <Ionicons name="locate-outline" size={18} color="#1976D2" />}
               </Pressable>
 
               <View style={[searchStyles.divider, { backgroundColor: colors.border }]} />
