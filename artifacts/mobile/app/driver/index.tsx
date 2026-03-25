@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   LogBox,
 } from "react-native";
+import Constants from "expo-constants";
 
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -37,10 +38,17 @@ LogBox.ignoreLogs([
   "expo-notifications: Android Push notifications",
   "`expo-notifications` functionality is not fully supported",
   "expo-notifications: Push notifications",
+  "expo-notifications: Notification",
 ]);
 
+// expo-notifications was removed from Expo Go in SDK 53+.
+// Detect Expo Go via executionEnvironment (SDK 53+) or appOwnership (legacy).
+const isExpoGo =
+  (Constants as any).executionEnvironment === "storeClient" ||
+  Constants.appOwnership === "expo";
+
 let Notifications: typeof import("expo-notifications") | null = null;
-if (Platform.OS !== "web") {
+if (Platform.OS !== "web" && !isExpoGo) {
   try {
     Notifications = require("expo-notifications");
     Notifications?.setNotificationHandler({
