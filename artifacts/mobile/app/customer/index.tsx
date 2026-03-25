@@ -355,7 +355,17 @@ function SearchModal({
   const handleSelectDestination = (dest: DestinationItem) => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClose();
-    router.push({ pathname: "/booking/create", params: { destinationId: dest.id, pickup: pickupText } });
+    router.push({
+      pathname: "/booking/create",
+      params: {
+        destinationId: dest.id,
+        pickup: pickupText,
+        destLat: String(dest.latitude),
+        destLon: String(dest.longitude),
+        pickupLat: userLat ? String(userLat) : undefined,
+        pickupLon: userLon ? String(userLon) : undefined,
+      },
+    });
   };
 
   const handleSelectPickup = (loc: PickupLocation) => {
@@ -420,17 +430,39 @@ function SearchModal({
             pickup: pickupText,
             distanceKm: String(distanceKm),
             durationMin: String(durationMin),
+            pickupLat: String(pLat),
+            pickupLon: String(pLon),
+            destLat: String(destLat),
+            destLon: String(destLon),
           },
         });
       } catch {
         onClose();
-        router.push({ pathname: "/booking/create", params: { destinationName: main, pickup: pickupText } });
+        router.push({
+          pathname: "/booking/create",
+          params: {
+            destinationName: main,
+            pickup: pickupText,
+            pickupLat: pLat ? String(pLat) : undefined,
+            pickupLon: pLon ? String(pLon) : undefined,
+            destLat: String(destLat),
+            destLon: String(destLon),
+          },
+        });
       } finally {
         setCalculatingRoute(false);
       }
     } else {
       onClose();
-      router.push({ pathname: "/booking/create", params: { destinationName: main, pickup: pickupText } });
+      router.push({
+        pathname: "/booking/create",
+        params: {
+          destinationName: main,
+          pickup: pickupText,
+          destLat: String(destLat),
+          destLon: String(destLon),
+        },
+      });
     }
   };
 
@@ -1196,6 +1228,8 @@ export default function BookScreen() {
                       vehicleType,
                       vehicleLabel:
                         vehicleType === "suv" ? "SUV" : vehicleType === "mini" ? "Mini" : "Sedan",
+                      pickupLat: userLocation ? String(userLocation.latitude) : undefined,
+                      pickupLon: userLocation ? String(userLocation.longitude) : undefined,
                     },
                   });
                 }}

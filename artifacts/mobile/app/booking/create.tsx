@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,11 +9,13 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@/components/icons";
 import * as Haptics from "expo-haptics";
+import * as Location from "expo-location";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import Colors from "@/constants/colors";
@@ -22,10 +24,26 @@ import { useAuth } from "@/contexts/AuthContext";
 import { calculateFare } from "@/constants/data";
 import { useData } from "@/contexts/DataContext";
 import { connectSocket } from "@/services/socketService";
+import { isStateSupported } from "@/constants/supportedLocations";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
   : "http://localhost:5000";
+
+async function fetchStateFromCoords(lat: number, lng: number): Promise<string | undefined> {
+  try {
+    const res = await fetch(`${API_BASE}/api/ola/reverse?lat=${lat}&lon=${lng}`);
+    const data = await res.json();
+    const results: any[] = data.results || data.geocodingResults || [];
+    const comps: any[] = results[0]?.address_components || [];
+    for (const c of comps) {
+      if ((c.types || []).includes("administrative_area_level_1")) return c.long_name as string;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export default function CreateBooking() {
   const { user } = useAuth();
@@ -39,6 +57,10 @@ export default function CreateBooking() {
     vehicleType: vehicleTypeParam,
     vehicleLabel: vehicleLabelParam,
     fare: fareParam,
+    pickupLat: pickupLatParam,
+    pickupLon: pickupLonParam,
+    destLat: destLatParam,
+    destLon: destLonParam,
   } = useLocalSearchParams<{
     destinationId?: string;
     destinationName?: string;
@@ -48,6 +70,10 @@ export default function CreateBooking() {
     vehicleType?: string;
     vehicleLabel?: string;
     fare?: string;
+    pickupLat?: string;
+    pickupLon?: string;
+    destLat?: string;
+    destLon?: string;
   }>();
 
   const insets = useSafeAreaInsets();
@@ -81,6 +107,53 @@ export default function CreateBooking() {
   const [couponDiscount, setCouponDiscount] = useState(0);
   const [couponMessage, setCouponMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [routeStatus, setRouteStatus] = useState<"checking" | "valid" | "blocked">("checking");
+  const [showRouteBlockedModal, setShowRouteBlockedModal] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const validate = async () => {
+      const dLat = destLatParam ? parseFloat(destLatParam) : null;
+      const dLon = destLonParam ? parseFloat(destLonParam) : null;
+      let pLat = pickupLatParam ? parseFloat(pickupLatParam) : null;
+      let pLon = pickupLonParam ? parseFloat(pickupLonParam) : null;
+
+      // If no pickup coords provided, try to get from GPS (native only)
+      if ((!pLat || !pLon) && Platform.OS !== "web") {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status === "granted") {
+            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            pLat = pos.coords.latitude;
+            pLon = pos.coords.longitude;
+          }
+        } catch {}
+      }
+
+      // Validate destination
+      let destOk = true;
+      if (dLat && dLon) {
+        const destState = await fetchStateFromCoords(dLat, dLon);
+        destOk = isStateSupported(destState);
+      }
+
+      // Validate pickup
+      let pickupOk = true;
+      if (pLat && pLon) {
+        const pickupState = await fetchStateFromCoords(pLat, pLon);
+        pickupOk = isStateSupported(pickupState);
+      }
+
+      if (cancelled) return;
+      if (!destOk || !pickupOk) {
+        setRouteStatus("blocked");
+      } else {
+        setRouteStatus("valid");
+      }
+    };
+    validate();
+    return () => { cancelled = true; };
+  }, [destLatParam, destLonParam, pickupLatParam, pickupLonParam]);
 
   const fare = couponApplied ? Math.max(0, baseFare - couponDiscount) : baseFare;
 
@@ -400,32 +473,97 @@ export default function CreateBooking() {
       >
         <View style={styles.bottomFareCol}>
           <Text style={[styles.bottomFareLbl, { color: colors.textSecondary }]}>Total Fare</Text>
-          <Text style={styles.bottomFareVal}>
-            {fare > 0 ? `₹${fare.toLocaleString()}` : "—"}
+          <Text style={[styles.bottomFareVal, routeStatus === "blocked" ? { color: colors.textSecondary } : {}]}>
+            {routeStatus === "blocked" ? "N/A" : fare > 0 ? `₹${fare.toLocaleString()}` : "—"}
           </Text>
         </View>
         <Pressable
-          onPress={handleBook}
-          disabled={loading}
-          style={({ pressed }) => [styles.confirmBtn, { opacity: pressed || loading ? 0.88 : 1 }]}
+          onPress={() => {
+            if (routeStatus === "blocked") {
+              setShowRouteBlockedModal(true);
+              return;
+            }
+            handleBook();
+          }}
+          disabled={loading || routeStatus === "checking"}
+          style={({ pressed }) => [
+            styles.confirmBtn,
+            {
+              opacity: pressed || loading || routeStatus === "checking" ? 0.88 : 1,
+            },
+          ]}
         >
           <LinearGradient
-            colors={[Colors.gold, Colors.goldDark]}
+            colors={routeStatus === "blocked" ? ["#555", "#333"] : [Colors.gold, Colors.goldDark]}
             style={styles.confirmGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
           >
-            {loading ? (
+            {routeStatus === "checking" ? (
+              <ActivityIndicator size="small" color={routeStatus === "checking" ? "#999" : "#0A0A0A"} />
+            ) : routeStatus === "blocked" ? (
+              <Ionicons name="close-circle-outline" size={19} color="#ccc" />
+            ) : loading ? (
               <ActivityIndicator size="small" color="#0A0A0A" />
             ) : (
               <Ionicons name="car" size={19} color="#0A0A0A" />
             )}
-            <Text style={styles.confirmText}>
-              {loading ? "Creating ride..." : "Confirm Booking"}
+            <Text style={[styles.confirmText, routeStatus === "blocked" ? { color: "#bbb" } : {}]}>
+              {routeStatus === "checking"
+                ? "Checking route…"
+                : routeStatus === "blocked"
+                ? "Not Available"
+                : loading
+                ? "Creating ride..."
+                : "Confirm Booking"}
             </Text>
           </LinearGradient>
         </Pressable>
       </Animated.View>
+
+      {/* Route Blocked Modal */}
+      <Modal
+        visible={showRouteBlockedModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowRouteBlockedModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalBox, { backgroundColor: colors.surface }]}>
+            <View style={styles.modalIconRow}>
+              <View style={[styles.modalIconBg, { backgroundColor: "#E74C3C18" }]}>
+                <Ionicons name="location-outline" size={32} color="#E74C3C" />
+              </View>
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>Route Not Available</Text>
+            <Text style={[styles.modalMsg, { color: colors.textSecondary }]}>
+              We are not available for this route yet.{"\n"}We currently serve only{" "}
+              <Text style={{ color: Colors.gold, fontFamily: "Poppins_600SemiBold" }}>
+                Delhi
+              </Text>{" "}
+              and{" "}
+              <Text style={{ color: Colors.gold, fontFamily: "Poppins_600SemiBold" }}>
+                Uttar Pradesh
+              </Text>
+              .{"\n\n"}Coming soon to more cities!
+            </Text>
+            <Pressable
+              onPress={() => setShowRouteBlockedModal(false)}
+              style={[styles.modalBtn, { backgroundColor: Colors.gold + "20" }]}
+            >
+              <Text style={[styles.modalBtnText, { color: Colors.gold }]}>Got it</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => { setShowRouteBlockedModal(false); router.back(); }}
+              style={styles.modalSecondaryBtn}
+            >
+              <Text style={[styles.modalSecondaryBtnText, { color: colors.textSecondary }]}>
+                Change Location
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -549,4 +687,55 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
   },
   confirmText: { fontFamily: "Poppins_600SemiBold", fontSize: 15, color: "#0A0A0A" },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+  },
+  modalBox: {
+    borderRadius: 20,
+    padding: 28,
+    width: "100%",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalIconRow: { marginBottom: 4 },
+  modalIconBg: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontFamily: "PlayfairDisplay_700Bold",
+    fontSize: 22,
+    textAlign: "center",
+    marginTop: 4,
+  },
+  modalMsg: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 22,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  modalBtn: {
+    width: "100%",
+    paddingVertical: 14,
+    borderRadius: 14,
+    alignItems: "center",
+    marginTop: 4,
+  },
+  modalBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
+  modalSecondaryBtn: { paddingVertical: 10, alignItems: "center" },
+  modalSecondaryBtnText: { fontFamily: "Poppins_500Medium", fontSize: 13 },
 });

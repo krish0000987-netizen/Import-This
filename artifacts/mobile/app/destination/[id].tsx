@@ -136,7 +136,14 @@ export default function DestinationDetail() {
         <Pressable
           onPress={() => {
             if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.push({ pathname: "/booking/create", params: { destinationId: destination.id } });
+            router.push({
+              pathname: "/booking/create",
+              params: {
+                destinationId: destination.id,
+                destLat: String(destination.latitude),
+                destLon: String(destination.longitude),
+              },
+            });
           }}
           style={({ pressed }) => [
             styles.bookBtn,
