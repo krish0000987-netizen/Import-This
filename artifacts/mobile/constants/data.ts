@@ -17,6 +17,46 @@ export interface Destination {
   longitude: number;
 }
 
+export interface CustomDestination {
+  id: string;
+  name: string;
+  tagline: string;
+  description: string;
+  imageUrl: string;
+  distance: string;
+  distanceKm: number;
+  duration: string;
+  basePrice: number;
+  pricePerKm: number;
+  rating: number;
+  reviewCount: number;
+  highlights: string[];
+  popular: boolean;
+  latitude: number;
+  longitude: number;
+  isCustom: true;
+  createdAt: string;
+}
+
+export type DestinationItem = (Destination & { isCustom?: false }) | CustomDestination;
+
+export interface DestinationOverride {
+  name?: string;
+  tagline?: string;
+  description?: string;
+  distance?: string;
+  distanceKm?: number;
+  duration?: string;
+  basePrice?: number;
+  pricePerKm?: number;
+  rating?: number;
+  reviewCount?: number;
+  highlights?: string[];
+  popular?: boolean;
+  latitude?: number;
+  longitude?: number;
+}
+
 export interface PickupLocation {
   id: string;
   name: string;

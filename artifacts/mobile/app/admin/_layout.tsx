@@ -23,6 +23,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
         <Label>Drivers</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="destinations">
+        <Icon sf={{ default: "map", selected: "map.fill" }} />
+        <Label>Tours</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="manage">
         <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
         <Label>Manage</Label>
@@ -83,6 +87,15 @@ function ClassicTabLayout() {
           title: "Drivers",
           tabBarIcon: ({ color, focused }) => (
             <Ionicons name={focused ? "people" : "people-outline"} size={22} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="destinations"
+        options={{
+          title: "Tours",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? "map" : "map-outline"} size={22} color={color} />
           ),
         }}
       />

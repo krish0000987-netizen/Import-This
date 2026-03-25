@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   View,
   Text,
@@ -15,20 +15,21 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
-import { destinations } from "@/constants/data";
+import { useData } from "@/contexts/DataContext";
+import { CustomDestination } from "@/constants/data";
 
 export default function FavoritesScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const [favorites, setFavorites] = useState<string[]>(["1", "2", "4"]);
+  const { favorites, toggleFavorite, getAllDestinations } = useData();
 
-  const favoriteDestinations = destinations.filter((d) => favorites.includes(d.id));
+  const allDestinations = getAllDestinations();
+  const favoriteDestinations = allDestinations.filter((d) => favorites.includes(d.id));
+  const otherDestinations = allDestinations.filter((d) => !favorites.includes(d.id));
 
-  const toggleFavorite = (id: string) => {
-    if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
-    );
+  const getImgSource = (dest: ReturnType<typeof getAllDestinations>[0]) => {
+    const isCustom = (dest as CustomDestination).isCustom;
+    return isCustom ? { uri: (dest as CustomDestination).imageUrl } : (dest as any).image;
   };
 
   return (
@@ -70,18 +71,22 @@ export default function FavoritesScreen() {
                 }}
                 style={({ pressed }) => [styles.destCard, { opacity: pressed ? 0.95 : 1 }]}
               >
-                <Image source={dest.image} style={styles.destImage} contentFit="cover" />
+                <Image source={getImgSource(dest)} style={styles.destImage} contentFit="cover" />
                 <LinearGradient colors={["transparent", "rgba(0,0,0,0.6)"]} style={styles.gradient} />
                 <View style={styles.destInfo}>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.destName}>{dest.name}</Text>
                     <Text style={styles.destTagline}>{dest.tagline}</Text>
                     <Text style={styles.destPrice}>
-                      from \u20B9{dest.basePrice.toLocaleString()} · {dest.distance}
+                      from ₹{dest.basePrice.toLocaleString()} · {dest.distance}
                     </Text>
                   </View>
                   <Pressable
-                    onPress={(e) => { e.stopPropagation(); toggleFavorite(dest.id); }}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      toggleFavorite(dest.id);
+                    }}
                     style={styles.heartBtn}
                   >
                     <Ionicons name="heart" size={22} color="#E91E63" />
@@ -90,27 +95,37 @@ export default function FavoritesScreen() {
               </Pressable>
             ))}
 
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: 24 }]}>
-              More Destinations
-            </Text>
-            {destinations.filter((d) => !favorites.includes(d.id)).map((dest) => (
-              <Pressable
-                key={dest.id}
-                onPress={() => router.push({ pathname: "/destination/[id]", params: { id: dest.id } })}
-                style={[styles.listRow, { backgroundColor: colors.surface }]}
-              >
-                <Image source={dest.image} style={styles.listThumb} contentFit="cover" />
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.listName, { color: colors.text }]}>{dest.name}</Text>
-                  <Text style={[styles.listSub, { color: colors.textSecondary }]}>
-                    from \u20B9{dest.basePrice.toLocaleString()} · {dest.distance}
-                  </Text>
-                </View>
-                <Pressable onPress={() => toggleFavorite(dest.id)} style={styles.heartBtn}>
-                  <Ionicons name="heart-outline" size={22} color={colors.textTertiary} />
-                </Pressable>
-              </Pressable>
-            ))}
+            {otherDestinations.length > 0 && (
+              <>
+                <Text style={[styles.sectionLabel, { color: colors.textSecondary, marginTop: 24 }]}>
+                  More Destinations
+                </Text>
+                {otherDestinations.map((dest) => (
+                  <Pressable
+                    key={dest.id}
+                    onPress={() => router.push({ pathname: "/destination/[id]", params: { id: dest.id } })}
+                    style={[styles.listRow, { backgroundColor: colors.surface }]}
+                  >
+                    <Image source={getImgSource(dest)} style={styles.listThumb} contentFit="cover" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.listName, { color: colors.text }]}>{dest.name}</Text>
+                      <Text style={[styles.listSub, { color: colors.textSecondary }]}>
+                        from ₹{dest.basePrice.toLocaleString()} · {dest.distance}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => {
+                        if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        toggleFavorite(dest.id);
+                      }}
+                      style={styles.heartBtn}
+                    >
+                      <Ionicons name="heart-outline" size={22} color={colors.textTertiary} />
+                    </Pressable>
+                  </Pressable>
+                ))}
+              </>
+            )}
           </>
         )}
       </ScrollView>

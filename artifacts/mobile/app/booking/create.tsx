@@ -19,7 +19,8 @@ import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { destinations, calculateFare } from "@/constants/data";
+import { calculateFare } from "@/constants/data";
+import { useData } from "@/contexts/DataContext";
 import { connectSocket } from "@/services/socketService";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
@@ -28,6 +29,7 @@ const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
 
 export default function CreateBooking() {
   const { user } = useAuth();
+  const { getAllDestinations } = useData();
   const {
     destinationId,
     destinationName: dynDestName,
@@ -51,7 +53,7 @@ export default function CreateBooking() {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
 
-  const curatedDest = destinations.find((d) => d.id === destinationId);
+  const curatedDest = getAllDestinations().find((d) => d.id === destinationId);
   const isDynamic = !curatedDest && !!dynDestName;
 
   const destDisplayName = curatedDest ? curatedDest.name : (dynDestName || "Custom Destination");

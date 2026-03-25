@@ -18,17 +18,17 @@ import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { destinations } from "@/constants/data";
+import { CustomDestination } from "@/constants/data";
 
 const { width } = Dimensions.get("window");
 
 export default function DestinationDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
-  const { colors, isDark } = useTheme();
-  const { toggleFavorite, isFavorite } = useData();
+  const { colors } = useTheme();
+  const { toggleFavorite, isFavorite, getAllDestinations } = useData();
 
-  const destination = destinations.find((d) => d.id === id);
+  const destination = getAllDestinations().find((d) => d.id === id);
   if (!destination) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }]}>
@@ -38,12 +38,16 @@ export default function DestinationDetail() {
   }
 
   const fav = isFavorite(destination.id);
+  const isCustom = (destination as CustomDestination).isCustom;
+  const imgSource = isCustom
+    ? { uri: (destination as CustomDestination).imageUrl }
+    : (destination as any).image;
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
         <View style={styles.imageSection}>
-          <Image source={destination.image} style={styles.heroImage} contentFit="cover" />
+          <Image source={imgSource} style={styles.heroImage} contentFit="cover" />
           <LinearGradient
             colors={["rgba(0,0,0,0.4)", "transparent", "transparent", "rgba(0,0,0,0.7)"]}
             style={StyleSheet.absoluteFill}

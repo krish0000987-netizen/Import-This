@@ -25,7 +25,8 @@ import { AppMapView, AppMarker } from "@/components/MapWrapper";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { destinations, Destination, LUCKNOW_CENTER, popularPickupLocations, PickupLocation } from "@/constants/data";
+import { Destination, LUCKNOW_CENTER, popularPickupLocations, PickupLocation, DestinationItem, CustomDestination } from "@/constants/data";
+import { useData } from "@/contexts/DataContext";
 import { isStateSupported, SUPPORTED_STATE_LABELS } from "@/constants/supportedLocations";
 
 const { width, height } = Dimensions.get("window");
@@ -41,7 +42,9 @@ const quickActions = [
 
 type SearchField = "pickup" | "destination";
 
-function DestinationCard({ item }: { item: Destination }) {
+function DestinationCard({ item }: { item: DestinationItem }) {
+  const isCustom = (item as CustomDestination).isCustom;
+  const imgSource = isCustom ? { uri: (item as CustomDestination).imageUrl } : (item as any).image;
   return (
     <Pressable
       onPress={() => {
@@ -53,7 +56,7 @@ function DestinationCard({ item }: { item: Destination }) {
         { opacity: pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.97 : 1 }] },
       ]}
     >
-      <Image source={item.image} style={styles.destImage} contentFit="cover" />
+      <Image source={imgSource} style={styles.destImage} contentFit="cover" />
       <LinearGradient
         colors={["transparent", "rgba(0,0,0,0.65)"]}
         style={styles.destGradient}
@@ -229,6 +232,8 @@ function SearchModal({
   userAreaName?: string;
 }) {
   const insets = useSafeAreaInsets();
+  const { getAllDestinations } = useData();
+  const allDestinations = getAllDestinations();
   const [activeField, setActiveField] = useState<SearchField>(initialField || "destination");
   const [pickupQuery, setPickupQuery] = useState("");
   const [destQuery, setDestQuery] = useState("");
@@ -307,13 +312,13 @@ function SearchModal({
   }, [destQuery]);
 
   const filteredDestinations = destQuery.trim()
-    ? destinations.filter(
+    ? allDestinations.filter(
         (d) =>
           d.name.toLowerCase().includes(destQuery.toLowerCase()) ||
           d.tagline.toLowerCase().includes(destQuery.toLowerCase()) ||
           d.highlights.some((h) => h.toLowerCase().includes(destQuery.toLowerCase()))
       )
-    : destinations;
+    : allDestinations;
 
   const filteredPickups = pickupQuery.trim()
     ? popularPickupLocations.filter(
@@ -323,7 +328,7 @@ function SearchModal({
       )
     : popularPickupLocations;
 
-  const handleSelectDestination = (dest: Destination) => {
+  const handleSelectDestination = (dest: DestinationItem) => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClose();
     router.push({ pathname: "/booking/create", params: { destinationId: dest.id, pickup: pickupText } });
@@ -783,7 +788,11 @@ function SearchModal({
                       { backgroundColor: pressed ? colors.surface : "transparent" },
                     ]}
                   >
-                    <Image source={item.image} style={searchStyles.destThumb} contentFit="cover" />
+                    <Image
+                      source={(item as CustomDestination).isCustom ? { uri: (item as CustomDestination).imageUrl } : (item as any).image}
+                      style={searchStyles.destThumb}
+                      contentFit="cover"
+                    />
                     <View style={{ flex: 1 }}>
                       <Text style={[searchStyles.destResultName, { color: colors.text }]}>{item.name}</Text>
                       <Text style={[searchStyles.destResultTagline, { color: colors.textSecondary }]}>{item.tagline}</Text>
@@ -882,6 +891,8 @@ export default function BookScreen() {
   const insets = useSafeAreaInsets();
   const { colors, isDark, toggleTheme } = useTheme();
   const { user } = useAuth();
+  const { getAllDestinations } = useData();
+  const allDestinations = getAllDestinations();
   const mapRef = useRef<any>(null);
 
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(LUCKNOW_CENTER);
@@ -1131,7 +1142,7 @@ export default function BookScreen() {
 
         <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.chipsSection}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsRow}>
-            {destinations.map((dest) => (
+            {allDestinations.map((dest) => (
               <Pressable
                 key={dest.id}
                 onPress={() => {
@@ -1155,7 +1166,7 @@ export default function BookScreen() {
             </Pressable>
           </View>
           <View style={styles.cardsGrid}>
-            {destinations.map((dest) => (
+            {allDestinations.map((dest) => (
               <DestinationCard key={dest.id} item={dest} />
             ))}
           </View>

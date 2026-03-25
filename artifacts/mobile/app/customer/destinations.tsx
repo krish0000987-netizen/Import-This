@@ -6,26 +6,27 @@ import {
   Pressable,
   FlatList,
   Platform,
-  Dimensions,
 } from "react-native";
 import { router } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@/components/icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useData } from "@/contexts/DataContext";
-import { destinations, Destination } from "@/constants/data";
+import { DestinationItem, CustomDestination } from "@/constants/data";
 
-const { width } = Dimensions.get("window");
-
-function DestListItem({ item, index }: { item: Destination; index: number }) {
+function DestListItem({ item, index }: { item: DestinationItem; index: number }) {
   const { colors } = useTheme();
   const { toggleFavorite, isFavorite } = useData();
   const fav = isFavorite(item.id);
+
+  const isCustom = (item as CustomDestination).isCustom;
+  const imgSource = isCustom
+    ? { uri: (item as CustomDestination).imageUrl }
+    : (item as any).image;
 
   return (
     <Animated.View entering={FadeInDown.delay(index * 60).duration(400)}>
@@ -39,7 +40,13 @@ function DestListItem({ item, index }: { item: Destination; index: number }) {
           { backgroundColor: colors.surface, opacity: pressed ? 0.95 : 1 },
         ]}
       >
-        <Image source={item.image} style={styles.listImage} contentFit="cover" />
+        {imgSource ? (
+          <Image source={imgSource} style={styles.listImage} contentFit="cover" />
+        ) : (
+          <View style={[styles.listImage, styles.imagePlaceholder]}>
+            <Ionicons name="image-outline" size={28} color={Colors.gold} />
+          </View>
+        )}
         <View style={styles.listInfo}>
           <Text style={[styles.listName, { color: colors.text }]}>{item.name}</Text>
           <Text style={[styles.listTagline, { color: colors.textSecondary }]}>{item.tagline}</Text>
@@ -73,11 +80,14 @@ function DestListItem({ item, index }: { item: Destination; index: number }) {
 export default function DestinationsScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
+  const { getAllDestinations } = useData();
+
+  const allDestinations = getAllDestinations();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
-        data={destinations}
+        data={allDestinations}
         keyExtractor={(item) => item.id}
         contentContainerStyle={{
           paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) + 16,
@@ -110,6 +120,11 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   listImage: { width: 110, height: 120 },
+  imagePlaceholder: {
+    backgroundColor: "#1A1A1A",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   listInfo: { flex: 1, padding: 12, gap: 2 },
   listName: { fontFamily: "Poppins_600SemiBold", fontSize: 16 },
   listTagline: { fontFamily: "Poppins_400Regular", fontSize: 12 },

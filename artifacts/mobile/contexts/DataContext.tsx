@@ -4,6 +4,7 @@ import {
   BookingData, sampleBookings, sampleDrivers, DriverData, destinations, vehicleTypes,
   CouponData, sampleCoupons, ReviewData, sampleReviews,
   SupportTicket, sampleTickets, WithdrawalRequest, sampleWithdrawals, DriverDocument,
+  CustomDestination, DestinationItem, DestinationOverride,
 } from "@/constants/data";
 
 interface DataContextValue {
@@ -15,6 +16,8 @@ interface DataContextValue {
   tickets: SupportTicket[];
   withdrawals: WithdrawalRequest[];
   commissionRate: number;
+  customDestinations: CustomDestination[];
+  destinationOverrides: Record<string, DestinationOverride>;
   addBooking: (booking: Omit<BookingData, "id">) => Promise<BookingData>;
   cancelBooking: (id: string) => Promise<void>;
   updateBookingStatus: (id: string, status: BookingData["status"]) => Promise<void>;
@@ -34,6 +37,10 @@ interface DataContextValue {
   addWithdrawal: (withdrawal: Omit<WithdrawalRequest, "id">) => void;
   updateWithdrawal: (id: string, updates: Partial<WithdrawalRequest>) => void;
   setCommissionRate: (rate: number) => void;
+  addDestination: (dest: Omit<CustomDestination, "id" | "isCustom" | "createdAt">) => void;
+  updateDestination: (id: string, updates: DestinationOverride) => void;
+  deleteDestination: (id: string) => void;
+  getAllDestinations: () => DestinationItem[];
   getStats: () => {
     totalBookings: number; activeBookings: number; totalRevenue: number;
     totalDrivers: number; activeDrivers: number; completedBookings: number;
@@ -52,6 +59,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [tickets, setTickets] = useState<SupportTicket[]>(sampleTickets);
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>(sampleWithdrawals);
   const [commissionRate, setCommissionRateState] = useState(15);
+  const [customDestinations, setCustomDestinations] = useState<CustomDestination[]>([]);
+  const [destinationOverrides, setDestinationOverrides] = useState<Record<string, DestinationOverride>>({});
 
   useEffect(() => {
     loadData();
@@ -59,18 +68,23 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const loadData = async () => {
     try {
-      const [storedBookings, storedFavorites, storedCoupons, storedReviews, storedTickets] = await Promise.all([
+      const [storedBookings, storedFavorites, storedCoupons, storedReviews, storedTickets,
+             storedCustomDests, storedDestOverrides] = await Promise.all([
         AsyncStorage.getItem("@safargo_bookings"),
         AsyncStorage.getItem("@safargo_favorites"),
         AsyncStorage.getItem("@safargo_coupons"),
         AsyncStorage.getItem("@safargo_reviews"),
         AsyncStorage.getItem("@safargo_tickets"),
+        AsyncStorage.getItem("@safargo_custom_destinations"),
+        AsyncStorage.getItem("@safargo_destination_overrides"),
       ]);
       if (storedBookings) setBookings(JSON.parse(storedBookings));
       if (storedFavorites) setFavorites(JSON.parse(storedFavorites));
       if (storedCoupons) setCoupons(JSON.parse(storedCoupons));
       if (storedReviews) setReviews(JSON.parse(storedReviews));
       if (storedTickets) setTickets(JSON.parse(storedTickets));
+      if (storedCustomDests) setCustomDestinations(JSON.parse(storedCustomDests));
+      if (storedDestOverrides) setDestinationOverrides(JSON.parse(storedDestOverrides));
     } catch (e) {
       console.error("Failed to load data", e);
     }
@@ -232,6 +246,42 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setCommissionRateState(rate);
   }, []);
 
+  const addDestination = useCallback(async (dest: Omit<CustomDestination, "id" | "isCustom" | "createdAt">) => {
+    const id = "cd" + Date.now().toString();
+    const newDest: CustomDestination = { ...dest, id, isCustom: true, createdAt: new Date().toISOString() };
+    const updated = [...customDestinations, newDest];
+    setCustomDestinations(updated);
+    await AsyncStorage.setItem("@safargo_custom_destinations", JSON.stringify(updated));
+  }, [customDestinations]);
+
+  const updateDestination = useCallback(async (id: string, updates: DestinationOverride) => {
+    const isCustom = customDestinations.some((d) => d.id === id);
+    if (isCustom) {
+      const updated = customDestinations.map((d) => d.id === id ? { ...d, ...updates } : d);
+      setCustomDestinations(updated);
+      await AsyncStorage.setItem("@safargo_custom_destinations", JSON.stringify(updated));
+    } else {
+      const newOverrides = { ...destinationOverrides, [id]: { ...(destinationOverrides[id] || {}), ...updates } };
+      setDestinationOverrides(newOverrides);
+      await AsyncStorage.setItem("@safargo_destination_overrides", JSON.stringify(newOverrides));
+    }
+  }, [customDestinations, destinationOverrides]);
+
+  const deleteDestination = useCallback(async (id: string) => {
+    const updated = customDestinations.filter((d) => d.id !== id);
+    setCustomDestinations(updated);
+    await AsyncStorage.setItem("@safargo_custom_destinations", JSON.stringify(updated));
+  }, [customDestinations]);
+
+  const getAllDestinations = useCallback((): DestinationItem[] => {
+    const staticWithOverrides: DestinationItem[] = destinations.map((d) => ({
+      ...d,
+      ...(destinationOverrides[d.id] || {}),
+      isCustom: false as const,
+    }));
+    return [...staticWithOverrides, ...customDestinations];
+  }, [destinationOverrides, customDestinations]);
+
   const getStats = useCallback(() => {
     const totalBookings = bookings.length;
     const activeBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "in_progress").length;
@@ -248,22 +298,28 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       bookings, favorites, drivers, coupons, reviews, tickets, withdrawals, commissionRate,
+      customDestinations, destinationOverrides,
       addBooking, cancelBooking, updateBookingStatus, toggleFavorite, isFavorite,
       updateDriverStatus, toggleDriverBlock, updateDriverDocument,
       applyCoupon, addCoupon, updateCoupon, deleteCoupon,
       addReview, getDriverReviews,
       addTicket, updateTicket,
       addWithdrawal, updateWithdrawal,
-      setCommissionRate, getStats,
+      setCommissionRate,
+      addDestination, updateDestination, deleteDestination, getAllDestinations,
+      getStats,
     }),
     [bookings, favorites, drivers, coupons, reviews, tickets, withdrawals, commissionRate,
+     customDestinations, destinationOverrides,
      addBooking, cancelBooking, updateBookingStatus, toggleFavorite, isFavorite,
      updateDriverStatus, toggleDriverBlock, updateDriverDocument,
      applyCoupon, addCoupon, updateCoupon, deleteCoupon,
      addReview, getDriverReviews,
      addTicket, updateTicket,
      addWithdrawal, updateWithdrawal,
-     setCommissionRate, getStats]
+     setCommissionRate,
+     addDestination, updateDestination, deleteDestination, getAllDestinations,
+     getStats]
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
