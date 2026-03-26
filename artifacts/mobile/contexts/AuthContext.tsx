@@ -28,7 +28,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 // Admin credentials — change this password before going live
 const ADMIN_EMAIL = "admin@safargo.com";
-const ADMIN_PASSWORD = "SafarAdmin@2026";
+const ADMIN_PASSWORD = "demo1234";
 
 const adminUser: UserData = {
   id: "admin1",
