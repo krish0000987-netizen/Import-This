@@ -116,6 +116,14 @@ function ClassicTabLayout() {
           headerShown: false,
         }}
       />
+      <Tabs.Screen
+        name="withdrawals"
+        options={{
+          title: "Withdrawals",
+          tabBarItemStyle: { display: "none" },
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 }

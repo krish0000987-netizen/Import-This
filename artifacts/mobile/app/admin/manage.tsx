@@ -37,7 +37,7 @@ export default function ManageScreen() {
   const { config: pricingConfig } = usePricing();
   const {
     getStats, coupons, addCoupon, updateCoupon, deleteCoupon,
-    tickets, updateTicket, withdrawals, updateWithdrawal,
+    tickets, updateTicket, withdrawals,
     commissionRate, setCommissionRate,
   } = useData();
   const stats = getStats();
@@ -145,13 +145,6 @@ export default function ManageScreen() {
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
   };
 
-  const handleApproveWithdrawal = (id: string) => {
-    Alert.alert("Approve Withdrawal", "Approve this withdrawal request?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Approve", onPress: () => updateWithdrawal(id, { status: "approved" }) },
-    ]);
-  };
-
   const handleBroadcast = async () => {
     const msg = broadcastMsg.trim();
     if (!msg) { Alert.alert("Empty Message", "Please type a message before sending."); return; }
@@ -178,6 +171,7 @@ export default function ManageScreen() {
   };
 
   const pendingWithdrawals = withdrawals.filter((w) => w.status === "pending");
+  const approvedWithdrawals = withdrawals.filter((w) => w.status === "approved");
   const openTickets = tickets.filter((t) => t.status === "open" || t.status === "in_progress");
 
   return (
@@ -485,22 +479,35 @@ export default function ManageScreen() {
           </Animated.View>
         )}
 
-        {pendingWithdrawals.length > 0 && (
-          <Animated.View entering={FadeInDown.delay(250).duration(500)}>
-            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Pending Withdrawals ({pendingWithdrawals.length})</Text>
-            {pendingWithdrawals.map((w) => (
-              <View key={w.id} style={[styles.withdrawCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.withdrawAmount, { color: colors.text }]}>{"\u20B9"}{w.amount.toLocaleString()}</Text>
-                  <Text style={[styles.withdrawMeta, { color: colors.textSecondary }]}>Driver: {w.driverId} · {w.date}</Text>
+        <Animated.View entering={FadeInDown.delay(250).duration(500)}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Driver Withdrawals</Text>
+          <Pressable
+            onPress={() => { if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/admin/withdrawals"); }}
+            style={[styles.navCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+          >
+            <View style={[styles.navCardIcon, { backgroundColor: "#F39C1218" }]}>
+              <Ionicons name="wallet-outline" size={22} color="#F39C12" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.navCardTitle, { color: colors.text }]}>Withdrawal Requests</Text>
+              <Text style={[styles.navCardSub, { color: colors.textSecondary }]}>
+                {pendingWithdrawals.length > 0
+                  ? `${pendingWithdrawals.length} pending · ${approvedWithdrawals.length} awaiting payment`
+                  : approvedWithdrawals.length > 0
+                  ? `${approvedWithdrawals.length} approved, awaiting payment`
+                  : `${withdrawals.length} total requests`}
+              </Text>
+            </View>
+            <View style={styles.navCardRight}>
+              {(pendingWithdrawals.length > 0 || approvedWithdrawals.length > 0) && (
+                <View style={[styles.navCardBadge, { backgroundColor: pendingWithdrawals.length > 0 ? "#F39C12" : "#3498DB" }]}>
+                  <Text style={styles.navCardBadgeText}>{pendingWithdrawals.length + approvedWithdrawals.length}</Text>
                 </View>
-                <Pressable onPress={() => handleApproveWithdrawal(w.id)} style={[styles.approveBtn, { backgroundColor: "#2ECC7118" }]}>
-                  <Ionicons name="checkmark" size={16} color="#2ECC71" />
-                </Pressable>
-              </View>
-            ))}
-          </Animated.View>
-        )}
+              )}
+              <Ionicons name="chevron-forward" size={18} color={colors.textTertiary} />
+            </View>
+          </Pressable>
+        </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(300).duration(500)}>
           <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Settings</Text>
@@ -703,6 +710,13 @@ const styles = StyleSheet.create({
   withdrawAmount: { fontFamily: "Poppins_700Bold", fontSize: 16 },
   withdrawMeta: { fontFamily: "Poppins_400Regular", fontSize: 12 },
   approveBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  navCard: { flexDirection: "row", alignItems: "center", borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 10 },
+  navCardIcon: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", marginRight: 12 },
+  navCardTitle: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
+  navCardSub: { fontFamily: "Poppins_400Regular", fontSize: 12, marginTop: 2 },
+  navCardRight: { flexDirection: "row", alignItems: "center" },
+  navCardBadge: { borderRadius: 10, minWidth: 20, height: 20, alignItems: "center", justifyContent: "center", paddingHorizontal: 6, marginRight: 6 },
+  navCardBadgeText: { fontFamily: "Poppins_700Bold", fontSize: 11, color: "#fff" },
   settingRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   settingLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
   settingLabel: { fontFamily: "Poppins_500Medium", fontSize: 15 },

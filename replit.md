@@ -99,6 +99,7 @@ Expo React Native app — Safar Go outstation taxi booking app from Lucknow, Ind
 - Routes: `app/auth.tsx`, `app/customer/*`, `app/driver/*`, `app/admin/*`, `app/booking/*`
 - Map: `components/MapWrapper.web.tsx` / `MapWrapper.native.tsx` — renders an Ola Maps iframe (via MapLibre GL JS) for both web and native. `components/mapHtmlBuilder.ts` builds the full map HTML with Ola Maps vector tiles, place autocomplete, directions, and booking UI.
 - Map auth flow: MapLibre fetches style.json from the backend proxy (`/api/ola/map-style`) which rewrites all Ola Maps URLs to include `?api_key=KEY`. A `transformRequest` function appends `?api_key=KEY` to any remaining Ola Maps tile URLs fetched from TileJSON. No Bearer tokens in the browser.
+- Withdrawal flow: `WithdrawalRequest` type in `constants/data.ts` — fields: `paymentMethod ("upi"|"bank")`, `upiId`, `bankAccountName`, `bankAccountNumber`, `bankIfscCode`, `notes`, `driverName`, `driverPhone`. Status: `pending→approved→paid`. Driver submits from `driver/earnings.tsx` (modal). Admin manages via `admin/withdrawals.tsx` (Approve / Reject / Mark as Paid). Navigation card on `admin/manage.tsx`.
 - Contexts: `DataContext`, `AuthContext`, `ThemeContext`
 - Socket: `services/socketService.ts` stubs for real-time driver assignment
 - Web stub: `stubs/react-native-worklets.web.js` — prevents `react-native-worklets` from crashing on web

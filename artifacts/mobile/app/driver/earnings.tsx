@@ -10,6 +10,7 @@ import {
   TextInput,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@/components/icons";
@@ -25,6 +26,8 @@ import { DriverData } from "@/constants/data";
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
   : "http://localhost:5000";
+
+const MIN_WITHDRAWAL = 500;
 
 interface EarningsData {
   driverId: string;
@@ -57,6 +60,12 @@ export default function EarningsScreen() {
 
   const [showWithdraw, setShowWithdraw] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState<"upi" | "bank">("upi");
+  const [upiId, setUpiId] = useState("");
+  const [bankAccountName, setBankAccountName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [bankIfscCode, setBankIfscCode] = useState("");
+  const [notes, setNotes] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<"today" | "week" | "month">("week");
   const [earnings, setEarnings] = useState<EarningsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,27 +103,73 @@ export default function EarningsScreen() {
 
   const walletBalance = earnings?.netTotalEarnings || 0;
 
+  const resetWithdrawForm = () => {
+    setWithdrawAmount("");
+    setPaymentMethod("upi");
+    setUpiId("");
+    setBankAccountName("");
+    setBankAccountNumber("");
+    setBankIfscCode("");
+    setNotes("");
+  };
+
   const handleWithdraw = () => {
     const amount = parseInt(withdrawAmount);
     if (!amount || amount <= 0) {
-      Alert.alert("Invalid Amount", "Please enter a valid amount.");
+      Alert.alert("Invalid Amount", "Please enter a valid withdrawal amount.");
+      return;
+    }
+    if (amount < MIN_WITHDRAWAL) {
+      Alert.alert("Minimum Withdrawal", `Minimum withdrawal amount is \u20B9${MIN_WITHDRAWAL.toLocaleString()}.`);
       return;
     }
     if (amount > walletBalance) {
-      Alert.alert("Insufficient Balance", "Withdrawal amount exceeds your wallet balance.");
+      Alert.alert("Insufficient Balance", "Withdrawal amount exceeds your available balance.");
       return;
     }
+    if (paymentMethod === "upi") {
+      if (!upiId.trim()) {
+        Alert.alert("UPI ID Required", "Please enter your UPI ID.");
+        return;
+      }
+      if (!upiId.includes("@")) {
+        Alert.alert("Invalid UPI ID", "Please enter a valid UPI ID (e.g. name@upi).");
+        return;
+      }
+    } else {
+      if (!bankAccountName.trim() || !bankAccountNumber.trim() || !bankIfscCode.trim()) {
+        Alert.alert("Bank Details Required", "Please fill in all bank account details.");
+        return;
+      }
+      if (bankIfscCode.trim().length !== 11) {
+        Alert.alert("Invalid IFSC", "IFSC code must be exactly 11 characters.");
+        return;
+      }
+    }
+
+    const bankDetails = paymentMethod === "upi"
+      ? `UPI: ${upiId.trim()}`
+      : `Bank: ${bankAccountName.trim()} ****${bankAccountNumber.trim().slice(-4)}`;
+
     addWithdrawal({
       driverId,
+      driverName: driver?.name,
+      driverPhone: driver?.phone,
       amount,
       status: "pending",
       date: new Date().toISOString().split("T")[0],
-      bankDetails: "Bank ****1234",
+      bankDetails,
+      paymentMethod,
+      upiId: paymentMethod === "upi" ? upiId.trim() : undefined,
+      bankAccountName: paymentMethod === "bank" ? bankAccountName.trim() : undefined,
+      bankAccountNumber: paymentMethod === "bank" ? bankAccountNumber.trim() : undefined,
+      bankIfscCode: paymentMethod === "bank" ? bankIfscCode.trim().toUpperCase() : undefined,
+      notes: notes.trim() || undefined,
     });
     if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowWithdraw(false);
-    setWithdrawAmount("");
-    Alert.alert("Request Submitted", `Your withdrawal request for \u20B9${amount.toLocaleString()} has been submitted.`);
+    resetWithdrawForm();
+    Alert.alert("Request Submitted", `Your withdrawal request for \u20B9${amount.toLocaleString()} has been submitted. Admin will process it shortly.`);
   };
 
   const txHistory = [
@@ -245,12 +300,13 @@ export default function EarningsScreen() {
           <Animated.View entering={FadeInDown.delay(250).duration(500)}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Withdrawal History</Text>
             {driverWithdrawals.slice(0, 5).map((w) => {
-              const statusColor = w.status === "completed" ? "#2ECC71" : w.status === "pending" ? "#F39C12" : w.status === "approved" ? "#3498DB" : "#E74C3C";
+              const statusColor = (w.status === "paid" || w.status === "completed") ? "#2ECC71" : w.status === "pending" ? "#F39C12" : w.status === "approved" ? "#3498DB" : "#E74C3C";
+              const statusLabel = w.status === "paid" ? "Paid" : w.status === "completed" ? "Paid" : w.status === "pending" ? "Pending" : w.status === "approved" ? "Approved" : "Rejected";
               return (
                 <View key={w.id} style={[styles.withdrawalRow, { borderBottomColor: colors.border }]}>
                   <View style={[styles.withdrawalIcon, { backgroundColor: statusColor + "18" }]}>
                     <Ionicons
-                      name={w.status === "completed" ? "checkmark" : w.status === "pending" ? "time" : "arrow-up"}
+                      name={(w.status === "paid" || w.status === "completed") ? "checkmark" : w.status === "pending" ? "time" : w.status === "approved" ? "checkmark-circle" : "close"}
                       size={14} color={statusColor}
                     />
                   </View>
@@ -259,7 +315,7 @@ export default function EarningsScreen() {
                     <Text style={[styles.withdrawalDate, { color: colors.textSecondary }]}>{w.date} · {w.bankDetails}</Text>
                   </View>
                   <View style={[styles.withdrawalBadge, { backgroundColor: statusColor + "18" }]}>
-                    <Text style={[styles.withdrawalStatus, { color: statusColor }]}>{w.status}</Text>
+                    <Text style={[styles.withdrawalStatus, { color: statusColor }]}>{statusLabel}</Text>
                   </View>
                 </View>
               );
@@ -302,71 +358,164 @@ export default function EarningsScreen() {
         )}
       </ScrollView>
 
-      <Modal visible={showWithdraw} animationType="slide" transparent onRequestClose={() => setShowWithdraw(false)}>
-        <View style={wStyles.overlay}>
-          <View style={[wStyles.sheet, { backgroundColor: colors.surface, paddingBottom: insets.bottom + 20 }]}>
-            <View style={wStyles.handle} />
-            <Text style={[wStyles.title, { color: colors.text }]}>Withdraw Funds</Text>
-            <Text style={[wStyles.balance, { color: colors.textSecondary }]}>
-              Available: {"\u20B9"}{walletBalance.toLocaleString()}
-            </Text>
+      <Modal visible={showWithdraw} animationType="slide" transparent onRequestClose={() => { setShowWithdraw(false); resetWithdrawForm(); }}>
+        <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+          <View style={wStyles.overlay}>
+            <View style={[wStyles.sheet, { backgroundColor: colors.surface, paddingBottom: insets.bottom + 16 }]}>
+              <View style={wStyles.handle} />
 
-            <View style={[wStyles.inputRow, { backgroundColor: isDark ? "#242420" : "#F5F3EE" }]}>
-              <Text style={[wStyles.rupee, { color: Colors.gold }]}>{"\u20B9"}</Text>
-              <TextInput
-                style={[wStyles.input, { color: colors.text }]}
-                value={withdrawAmount}
-                onChangeText={setWithdrawAmount}
-                placeholder="Enter amount"
-                placeholderTextColor={colors.textTertiary}
-                keyboardType="numeric"
-              />
-            </View>
-
-            <View style={wStyles.quickAmounts}>
-              {[1000, 2000, 5000].map((a) => (
-                <Pressable key={a} onPress={() => setWithdrawAmount(a.toString())} style={[wStyles.quickBtn, { borderColor: colors.border }]}>
-                  <Text style={[wStyles.quickText, { color: colors.text }]}>{"\u20B9"}{a.toLocaleString()}</Text>
+              <View style={wStyles.headerRow}>
+                <Text style={[wStyles.title, { color: colors.text }]}>Withdraw Funds</Text>
+                <Pressable onPress={() => { setShowWithdraw(false); resetWithdrawForm(); }} style={wStyles.closeBtn}>
+                  <Ionicons name="close" size={20} color={colors.textSecondary} />
                 </Pressable>
-              ))}
-            </View>
+              </View>
 
-            <View style={wStyles.bankInfo}>
-              <Ionicons name="business-outline" size={16} color={colors.textSecondary} />
-              <Text style={[wStyles.bankText, { color: colors.textSecondary }]}>Bank Account: ****1234</Text>
-            </View>
+              <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                <View style={[wStyles.balanceBanner, { backgroundColor: Colors.gold + "14" }]}>
+                  <Ionicons name="wallet" size={16} color={Colors.gold} />
+                  <Text style={[wStyles.balanceLabel, { color: colors.textSecondary }]}>Available Balance</Text>
+                  <Text style={[wStyles.balanceValue, { color: Colors.gold }]}>{"\u20B9"}{walletBalance.toLocaleString()}</Text>
+                </View>
 
-            <View style={wStyles.btnRow}>
-              <Pressable onPress={() => setShowWithdraw(false)} style={[wStyles.cancelBtn, { borderColor: colors.border }]}>
-                <Text style={[wStyles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
-              </Pressable>
-              <Pressable onPress={handleWithdraw} style={wStyles.submitBtn}>
-                <Text style={wStyles.submitText}>Request Withdrawal</Text>
-              </Pressable>
+                <Text style={[wStyles.fieldLabel, { color: colors.textSecondary }]}>Withdrawal Amount</Text>
+                <View style={[wStyles.inputRow, { backgroundColor: isDark ? "#242420" : "#F5F3EE", borderColor: colors.border }]}>
+                  <Text style={[wStyles.rupee, { color: Colors.gold }]}>{"\u20B9"}</Text>
+                  <TextInput
+                    style={[wStyles.input, { color: colors.text }]}
+                    value={withdrawAmount}
+                    onChangeText={setWithdrawAmount}
+                    placeholder="0"
+                    placeholderTextColor={colors.textTertiary}
+                    keyboardType="numeric"
+                  />
+                </View>
+                <Text style={[wStyles.minNote, { color: colors.textTertiary }]}>Minimum: \u20B9{MIN_WITHDRAWAL.toLocaleString()}</Text>
+
+                <View style={wStyles.quickAmounts}>
+                  {[1000, 2000, 5000].map((a) => (
+                    <Pressable key={a} onPress={() => setWithdrawAmount(a.toString())} style={[wStyles.quickBtn, { borderColor: colors.border, backgroundColor: withdrawAmount === a.toString() ? Colors.gold + "18" : "transparent" }]}>
+                      <Text style={[wStyles.quickText, { color: withdrawAmount === a.toString() ? Colors.gold : colors.text }]}>{"\u20B9"}{a.toLocaleString()}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Text style={[wStyles.fieldLabel, { color: colors.textSecondary }]}>Payment Method</Text>
+                <View style={[wStyles.methodRow, { backgroundColor: isDark ? "#242420" : "#F5F3EE", borderColor: colors.border }]}>
+                  <Pressable
+                    style={[wStyles.methodBtn, paymentMethod === "upi" && { backgroundColor: Colors.gold }]}
+                    onPress={() => setPaymentMethod("upi")}
+                  >
+                    <Ionicons name="call-outline" size={16} color={paymentMethod === "upi" ? "#0A0A0A" : colors.textSecondary} />
+                    <Text style={[wStyles.methodText, { color: paymentMethod === "upi" ? "#0A0A0A" : colors.textSecondary }]}>UPI ID</Text>
+                  </Pressable>
+                  <Pressable
+                    style={[wStyles.methodBtn, paymentMethod === "bank" && { backgroundColor: Colors.gold }]}
+                    onPress={() => setPaymentMethod("bank")}
+                  >
+                    <Ionicons name="business-outline" size={16} color={paymentMethod === "bank" ? "#0A0A0A" : colors.textSecondary} />
+                    <Text style={[wStyles.methodText, { color: paymentMethod === "bank" ? "#0A0A0A" : colors.textSecondary }]}>Bank Transfer</Text>
+                  </Pressable>
+                </View>
+
+                {paymentMethod === "upi" ? (
+                  <View>
+                    <Text style={[wStyles.fieldLabel, { color: colors.textSecondary }]}>UPI ID</Text>
+                    <TextInput
+                      style={[wStyles.textField, { color: colors.text, backgroundColor: isDark ? "#242420" : "#F5F3EE", borderColor: colors.border }]}
+                      value={upiId}
+                      onChangeText={setUpiId}
+                      placeholder="yourname@upi"
+                      placeholderTextColor={colors.textTertiary}
+                      autoCapitalize="none"
+                      keyboardType="email-address"
+                    />
+                  </View>
+                ) : (
+                  <View>
+                    <Text style={[wStyles.fieldLabel, { color: colors.textSecondary }]}>Account Holder Name</Text>
+                    <TextInput
+                      style={[wStyles.textField, { color: colors.text, backgroundColor: isDark ? "#242420" : "#F5F3EE", borderColor: colors.border }]}
+                      value={bankAccountName}
+                      onChangeText={setBankAccountName}
+                      placeholder="Full name as in bank records"
+                      placeholderTextColor={colors.textTertiary}
+                      autoCapitalize="words"
+                    />
+                    <Text style={[wStyles.fieldLabel, { color: colors.textSecondary }]}>Account Number</Text>
+                    <TextInput
+                      style={[wStyles.textField, { color: colors.text, backgroundColor: isDark ? "#242420" : "#F5F3EE", borderColor: colors.border }]}
+                      value={bankAccountNumber}
+                      onChangeText={setBankAccountNumber}
+                      placeholder="Enter account number"
+                      placeholderTextColor={colors.textTertiary}
+                      keyboardType="numeric"
+                      secureTextEntry
+                    />
+                    <Text style={[wStyles.fieldLabel, { color: colors.textSecondary }]}>IFSC Code</Text>
+                    <TextInput
+                      style={[wStyles.textField, { color: colors.text, backgroundColor: isDark ? "#242420" : "#F5F3EE", borderColor: colors.border }]}
+                      value={bankIfscCode}
+                      onChangeText={(t) => setBankIfscCode(t.toUpperCase())}
+                      placeholder="e.g. SBIN0001234"
+                      placeholderTextColor={colors.textTertiary}
+                      autoCapitalize="characters"
+                      maxLength={11}
+                    />
+                  </View>
+                )}
+
+                <Text style={[wStyles.fieldLabel, { color: colors.textSecondary }]}>Notes (optional)</Text>
+                <TextInput
+                  style={[wStyles.textField, { color: colors.text, backgroundColor: isDark ? "#242420" : "#F5F3EE", borderColor: colors.border, height: 70, textAlignVertical: "top" }]}
+                  value={notes}
+                  onChangeText={setNotes}
+                  placeholder="Any message for admin..."
+                  placeholderTextColor={colors.textTertiary}
+                  multiline
+                />
+
+                <View style={wStyles.btnRow}>
+                  <Pressable onPress={() => { setShowWithdraw(false); resetWithdrawForm(); }} style={[wStyles.cancelBtn, { borderColor: colors.border }]}>
+                    <Text style={[wStyles.cancelText, { color: colors.textSecondary }]}>Cancel</Text>
+                  </Pressable>
+                  <Pressable onPress={handleWithdraw} style={wStyles.submitBtn}>
+                    <Text style={wStyles.submitText}>Submit Request</Text>
+                  </Pressable>
+                </View>
+              </ScrollView>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </>
   );
 }
 
 const wStyles = StyleSheet.create({
-  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
-  sheet: { borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#D0D0D0", alignSelf: "center", marginBottom: 20 },
-  title: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 22, textAlign: "center" },
-  balance: { fontFamily: "Poppins_400Regular", fontSize: 14, textAlign: "center", marginTop: 4, marginBottom: 20 },
-  inputRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 16, paddingVertical: 14, borderRadius: 14, marginBottom: 16 },
-  rupee: { fontFamily: "Poppins_700Bold", fontSize: 24 },
-  input: { flex: 1, fontFamily: "Poppins_600SemiBold", fontSize: 24, padding: 0 },
-  quickAmounts: { flexDirection: "row", gap: 10, marginBottom: 16 },
-  quickBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, borderWidth: 1, alignItems: "center" },
-  quickText: { fontFamily: "Poppins_500Medium", fontSize: 14 },
-  bankInfo: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 20 },
-  bankText: { fontFamily: "Poppins_400Regular", fontSize: 13 },
-  btnRow: { flexDirection: "row", gap: 12 },
-  cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, alignItems: "center" },
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
+  sheet: { borderTopLeftRadius: 26, borderTopRightRadius: 26, padding: 20, maxHeight: "92%" },
+  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: "#D0D0D0", alignSelf: "center", marginBottom: 16 },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
+  title: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 22 },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  balanceBanner: { flexDirection: "row", alignItems: "center", borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10, marginBottom: 18 },
+  balanceLabel: { fontFamily: "Poppins_400Regular", fontSize: 13, flex: 1, marginLeft: 8 },
+  balanceValue: { fontFamily: "Poppins_700Bold", fontSize: 16 },
+  fieldLabel: { fontFamily: "Poppins_500Medium", fontSize: 12, marginBottom: 6, marginTop: 14 },
+  inputRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 12, borderRadius: 12, borderWidth: 1 },
+  rupee: { fontFamily: "Poppins_700Bold", fontSize: 22, marginRight: 6 },
+  input: { flex: 1, fontFamily: "Poppins_600SemiBold", fontSize: 22, padding: 0 },
+  minNote: { fontFamily: "Poppins_400Regular", fontSize: 11, marginTop: 4 },
+  quickAmounts: { flexDirection: "row", marginTop: 10, marginBottom: 2 },
+  quickBtn: { flex: 1, paddingVertical: 9, borderRadius: 10, borderWidth: 1, alignItems: "center", marginRight: 8 },
+  quickText: { fontFamily: "Poppins_500Medium", fontSize: 13 },
+  methodRow: { flexDirection: "row", borderRadius: 12, padding: 4, borderWidth: 1 },
+  methodBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", paddingVertical: 10, borderRadius: 10 },
+  methodText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, marginLeft: 6 },
+  textField: { borderRadius: 12, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 11, fontFamily: "Poppins_400Regular", fontSize: 14 },
+  btnRow: { flexDirection: "row", marginTop: 20, marginBottom: 4 },
+  cancelBtn: { flex: 1, paddingVertical: 14, borderRadius: 12, borderWidth: 1, alignItems: "center", marginRight: 10 },
   cancelText: { fontFamily: "Poppins_500Medium", fontSize: 15 },
   submitBtn: { flex: 2, paddingVertical: 14, borderRadius: 12, backgroundColor: Colors.gold, alignItems: "center" },
   submitText: { fontFamily: "Poppins_600SemiBold", fontSize: 15, color: "#0A0A0A" },
@@ -385,7 +534,7 @@ const styles = StyleSheet.create({
   totalStatValue: { fontFamily: "Poppins_600SemiBold", fontSize: 16, color: "#0A0A0A" },
   totalStatLabel: { fontFamily: "Poppins_400Regular", fontSize: 11, color: "rgba(10,10,10,0.5)", marginTop: 2 },
   totalDivider: { width: 1, backgroundColor: "rgba(10,10,10,0.1)" },
-  periodRow: { flexDirection: "row", gap: 8, marginBottom: 16 },
+  periodRow: { flexDirection: "row", marginBottom: 16 },
   periodBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center" },
   periodText: { fontFamily: "Poppins_500Medium", fontSize: 13 },
   breakdownCard: { borderRadius: 14, borderWidth: 1, padding: 16, marginBottom: 20 },
@@ -394,21 +543,21 @@ const styles = StyleSheet.create({
   breakdownValue: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
   breakdownDivider: { height: 1 },
   walletSection: { marginBottom: 24 },
-  walletCard: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 14, borderWidth: 1 },
+  walletCard: { flexDirection: "row", alignItems: "center", padding: 16, borderRadius: 14, borderWidth: 1 },
   walletLabel: { fontFamily: "Poppins_400Regular", fontSize: 12 },
   walletValue: { fontFamily: "Poppins_700Bold", fontSize: 20 },
-  withdrawBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10 },
+  withdrawBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10, marginLeft: 14 },
   withdrawText: { fontFamily: "Poppins_600SemiBold", fontSize: 13 },
   sectionTitle: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 20, marginBottom: 14 },
-  withdrawalRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12, borderBottomWidth: 1 },
-  withdrawalIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center" },
+  withdrawalRow: { flexDirection: "row", alignItems: "center", paddingVertical: 12, borderBottomWidth: 1 },
+  withdrawalIcon: { width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center", marginRight: 12 },
   withdrawalAmount: { fontFamily: "Poppins_600SemiBold", fontSize: 14 },
   withdrawalDate: { fontFamily: "Poppins_400Regular", fontSize: 12 },
   withdrawalBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   withdrawalStatus: { fontFamily: "Poppins_500Medium", fontSize: 11, textTransform: "capitalize" },
-  emptyTx: { alignItems: "center", padding: 24, borderRadius: 14, gap: 8 },
-  txRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 14, borderBottomWidth: 1 },
-  txIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center" },
+  emptyTx: { alignItems: "center", padding: 24, borderRadius: 14 },
+  txRow: { flexDirection: "row", alignItems: "center", paddingVertical: 14, borderBottomWidth: 1 },
+  txIcon: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", marginRight: 12 },
   txName: { fontFamily: "Poppins_500Medium", fontSize: 14 },
   txDate: { fontFamily: "Poppins_400Regular", fontSize: 12 },
   txAmount: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },

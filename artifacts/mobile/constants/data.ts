@@ -333,10 +333,18 @@ export interface SupportTicket {
 export interface WithdrawalRequest {
   id: string;
   driverId: string;
+  driverName?: string;
+  driverPhone?: string;
   amount: number;
-  status: "pending" | "approved" | "rejected" | "completed";
+  status: "pending" | "approved" | "rejected" | "paid" | "completed";
   date: string;
   bankDetails: string;
+  paymentMethod?: "upi" | "bank";
+  upiId?: string;
+  bankAccountName?: string;
+  bankAccountNumber?: string;
+  bankIfscCode?: string;
+  notes?: string;
 }
 
 export const vehicleTypes = {
@@ -622,7 +630,24 @@ export const sampleTickets: SupportTicket[] = [
 ];
 
 export const sampleWithdrawals: WithdrawalRequest[] = [
-  { id: "w1", driverId: "d1", amount: 5000, status: "completed", date: "2026-02-18", bankDetails: "SBI ****1234" },
-  { id: "w2", driverId: "d1", amount: 3000, status: "pending", date: "2026-02-20", bankDetails: "SBI ****1234" },
-  { id: "w3", driverId: "d3", amount: 10000, status: "completed", date: "2026-02-16", bankDetails: "HDFC ****5678" },
+  {
+    id: "w1", driverId: "d1", driverName: "Mohit Tiwari", driverPhone: "+91 98100 55432",
+    amount: 5000, status: "paid", date: "2026-02-18", bankDetails: "SBI ****1234",
+    paymentMethod: "bank", bankAccountName: "Mohit Tiwari", bankAccountNumber: "XXXX1234", bankIfscCode: "SBIN0001234",
+  },
+  {
+    id: "w2", driverId: "d1", driverName: "Mohit Tiwari", driverPhone: "+91 98100 55432",
+    amount: 3000, status: "pending", date: "2026-02-20", bankDetails: "UPI: mohit@upi",
+    paymentMethod: "upi", upiId: "mohit@upi",
+  },
+  {
+    id: "w3", driverId: "d3", driverName: "Ravi Mishra", driverPhone: "+91 99102 33456",
+    amount: 10000, status: "approved", date: "2026-02-16", bankDetails: "HDFC ****5678",
+    paymentMethod: "bank", bankAccountName: "Ravi Mishra", bankAccountNumber: "XXXX5678", bankIfscCode: "HDFC0002345",
+  },
+  {
+    id: "w4", driverId: "d2", driverName: "Priya Sharma", driverPhone: "+91 97320 88901",
+    amount: 2000, status: "rejected", date: "2026-02-22", bankDetails: "UPI: priya@ybl",
+    paymentMethod: "upi", upiId: "priya@ybl", notes: "Incorrect UPI details provided",
+  },
 ];
