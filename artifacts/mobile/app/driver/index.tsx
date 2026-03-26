@@ -212,7 +212,6 @@ export default function DriverDashboard() {
   const [isOnline, setIsOnline] = useState(driver?.isAvailable ?? false);
   const [pendingRide, setPendingRide] = useState<RideRequest | null>(null);
   const [accepting, setAccepting] = useState(false);
-  const [simulating, setSimulating] = useState(false);
   const pendingRideRef = useRef<RideRequest | null>(null);
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -372,22 +371,6 @@ export default function DriverDashboard() {
     setPendingRide(null);
   };
 
-  /* ── Dev: Simulate a ride request ────────────────────────── */
-  const handleSimulateRide = async () => {
-    setSimulating(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/dev/simulate-ride`, { method: "POST" });
-      if (res.ok) {
-        // Backend now emits newRideRequest via socket to this driver automatically
-        if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
-    } catch {
-      Alert.alert("Error", "Could not simulate ride.");
-    } finally {
-      setSimulating(false);
-    }
-  };
-
   return (
     <>
       <ScrollView
@@ -507,37 +490,6 @@ export default function DriverDashboard() {
             )}
           </View>
         </Animated.View>
-
-        {/* ── Dev: Simulate Ride ───────────────── */}
-        {isOnline && (
-          <Animated.View entering={FadeInDown.delay(180).duration(400)}>
-            <View style={[styles.devCard, { backgroundColor: isDark ? "#111100" : "#FFFBEC", borderColor: Colors.gold + "30" }]}>
-              <View style={styles.devCardHeader}>
-                <Ionicons name="code-slash-outline" size={13} color={Colors.gold} />
-                <Text style={[styles.devCardTitle, { color: Colors.gold }]}>Dev Tools</Text>
-              </View>
-              <Text style={[styles.devCardSub, { color: colors.textSecondary }]}>
-                Simulate an incoming ride request to test the driver flow
-              </Text>
-              <Pressable
-                onPress={handleSimulateRide}
-                disabled={simulating}
-                style={({ pressed }) => [
-                  styles.simulateBtn,
-                  { borderColor: Colors.gold + "50", opacity: pressed || simulating ? 0.7 : 1 },
-                ]}
-              >
-                {simulating
-                  ? <ActivityIndicator size="small" color={Colors.gold} />
-                  : <Ionicons name="flash-outline" size={16} color={Colors.gold} />
-                }
-                <Text style={styles.simulateBtnText}>
-                  {simulating ? "Sending Request…" : "Simulate Ride Request"}
-                </Text>
-              </Pressable>
-            </View>
-          </Animated.View>
-        )}
 
         {/* ── Vehicle & KYC ────────────────────── */}
         <Animated.View entering={FadeInDown.delay(220).duration(500)}>
@@ -743,13 +695,6 @@ const styles = StyleSheet.create({
   statusSub: { fontFamily: "Poppins_400Regular", fontSize: 12, marginTop: 2 },
   pulsingDot: { width: 14, height: 14, borderRadius: 7, backgroundColor: "#2ECC7130", alignItems: "center", justifyContent: "center" },
   pulseInner: { width: 8, height: 8, borderRadius: 4 },
-
-  devCard: { borderRadius: 14, borderWidth: 1, padding: 14, marginBottom: 20, gap: 8 },
-  devCardHeader: { flexDirection: "row", alignItems: "center", gap: 6 },
-  devCardTitle: { fontFamily: "Poppins_600SemiBold", fontSize: 12 },
-  devCardSub: { fontFamily: "Poppins_400Regular", fontSize: 12, lineHeight: 18 },
-  simulateBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 10, borderRadius: 10, borderWidth: 1 },
-  simulateBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 13, color: Colors.gold },
 
   sectionTitle: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 20, marginBottom: 12 },
 

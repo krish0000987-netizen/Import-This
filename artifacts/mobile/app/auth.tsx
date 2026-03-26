@@ -156,48 +156,6 @@ export default function AuthScreen() {
                 </Text>
               </Animated.View>
 
-              {/* ── Dev Quick Login ── */}
-              <Animated.View entering={FadeInDown.delay(135).duration(400)}>
-                <View style={[styles.devPanel, { backgroundColor: isDark ? "#111100" : "#FFFBEC", borderColor: Colors.gold + "30" }]}>
-                  <View style={styles.devPanelHeader}>
-                    <Ionicons name="code-slash-outline" size={13} color={Colors.gold} />
-                    <Text style={[styles.devPanelTitle, { color: Colors.gold }]}>Dev Quick Login</Text>
-                  </View>
-                  <View style={styles.devChipsRow}>
-                    {[
-                      { label: "Admin", icon: "shield-outline", email: "admin@safargo.com" },
-                      { label: "Driver", icon: "car-outline", email: "driver@safargo.com" },
-                      { label: "Customer", icon: "person-outline", email: "customer@safargo.com" },
-                    ].map((acc) => (
-                      <Pressable
-                        key={acc.email}
-                        onPress={() => {
-                          if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          setEmail(acc.email);
-                          setPassword("demo1234");
-                        }}
-                        style={({ pressed }) => [
-                          styles.devChip,
-                          {
-                            backgroundColor: email === acc.email
-                              ? Colors.gold + "22"
-                              : isDark ? "#1A1A00" : "#FFF8DC",
-                            borderColor: email === acc.email ? Colors.gold : Colors.gold + "30",
-                            opacity: pressed ? 0.7 : 1,
-                          },
-                        ]}
-                      >
-                        <Ionicons name={acc.icon as any} size={13} color={Colors.gold} />
-                        <Text style={[styles.devChipText, { color: Colors.gold }]}>{acc.label}</Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                  <Text style={[styles.devNote, { color: secondaryText }]}>
-                    Tap a role above to auto-fill credentials, then press Sign In
-                  </Text>
-                </View>
-              </Animated.View>
-
               <Animated.View entering={FadeInDown.delay(160).duration(500)} style={styles.fieldGroup}>
                 <Text style={[styles.fieldLabel, { color: textColor }]}>Email / Username</Text>
                 <View style={[styles.inputBox, { backgroundColor: inputBg, borderColor }]}>
@@ -660,46 +618,4 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  devPanel: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 14,
-    marginBottom: 20,
-    gap: 10,
-  },
-  devPanelHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  devPanelTitle: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 12,
-    letterSpacing: 0.3,
-  },
-  devChipsRow: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  devChip: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 5,
-    paddingVertical: 9,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-    borderWidth: 1,
-  },
-  devChipText: {
-    fontFamily: "Poppins_600SemiBold",
-    fontSize: 12,
-  },
-  devNote: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 11,
-    textAlign: "center",
-    opacity: 0.7,
-  },
 });

@@ -185,34 +185,4 @@ router.post("/rides/:rideId/complete", (req, res) => {
   res.json({ success: true });
 });
 
-// ── POST /api/dev/simulate-ride ───────────────────────────────────────────
-// Dev/testing: creates a fake ride and broadcasts to all online drivers.
-router.post("/dev/simulate-ride", (req, res) => {
-  const pickups = ["Hazratganj, Lucknow", "Gomti Nagar, Lucknow", "Aliganj, Lucknow", "Indira Nagar, Lucknow"];
-  const drops = ["Charbagh Station", "Alambagh, Lucknow", "Chinhat, Lucknow", "Faizabad Road, Lucknow"];
-
-  const rideId = `SG${Date.now().toString().slice(-8)}`;
-  const fare = Math.floor(Math.random() * 800) + 200;
-  const distanceKm = Math.round((Math.random() * 20 + 3) * 10) / 10;
-
-  const ride: RideRecord = {
-    rideId,
-    pickup: pickups[Math.floor(Math.random() * pickups.length)],
-    drop: drops[Math.floor(Math.random() * drops.length)],
-    distanceKm,
-    durationMin: Math.round(distanceKm * 3 + 5),
-    fare,
-    vehicleType: Math.random() > 0.5 ? "sedan" : "suv",
-    riderName: "Test Passenger",
-    status: "searching",
-    createdAt: Date.now(),
-  };
-
-  ridesStore.set(rideId, ride);
-  const driverCount = broadcastRideRequest(ride);
-  logger.info({ rideId, driverCount }, "Simulated ride request broadcasted");
-
-  res.json({ rideId, driverCount, ride });
-});
-
 export default router;

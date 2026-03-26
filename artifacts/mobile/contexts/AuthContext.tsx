@@ -26,56 +26,19 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const defaultUsers: Record<string, UserData | DriverData> = {
-  "admin@safargo.com": {
-    id: "admin1",
-    name: "Safar Admin",
-    email: "admin@safargo.com",
-    phone: "+91 99999 00000",
-    role: "admin",
-    walletBalance: 0,
-    totalTrips: 0,
-    memberSince: "2023-01-01",
-  },
-  "driver@safargo.com": {
-    id: "demo_driver1",
-    name: "Rajesh Kumar",
-    email: "driver@safargo.com",
-    phone: "+91 98765 43210",
-    role: "driver",
-    walletBalance: 1250,
-    totalTrips: 142,
-    memberSince: "2024-03-15",
-    vehicle: "Maruti Suzuki Dzire",
-    vehicleNumber: "UP 32 AB 1234",
-    rating: 4.8,
-    isAvailable: true,
-    isBlocked: false,
-    kycStatus: "approved",
-    totalEarnings: 87450,
-    todayEarnings: 1240,
-    weekEarnings: 6800,
-    monthEarnings: 22500,
-    completedTrips: 138,
-    commissionRate: 15,
-    documents: [
-      { type: "driving_license", label: "Driving License (DL)", status: "verified", uploadDate: "2024-03-16", expiryDate: "2029-03" },
-      { type: "aadhaar", label: "Aadhaar Card", status: "verified", uploadDate: "2024-03-16" },
-      { type: "pan", label: "PAN Card", status: "verified", uploadDate: "2024-03-16" },
-      { type: "rc", label: "Vehicle RC (Registration)", status: "verified", uploadDate: "2024-03-16", expiryDate: "2026-08" },
-      { type: "insurance", label: "Vehicle Insurance", status: "verified", uploadDate: "2024-03-16", expiryDate: "2025-12" },
-    ],
-  } as DriverData,
-  "customer@safargo.com": {
-    id: "demo_customer1",
-    name: "Arjun Sharma",
-    email: "customer@safargo.com",
-    phone: "+91 98100 11223",
-    role: "customer",
-    walletBalance: 500,
-    totalTrips: 23,
-    memberSince: "2024-06-01",
-  },
+// Admin credentials — change this password before going live
+const ADMIN_EMAIL = "admin@safargo.com";
+const ADMIN_PASSWORD = "SafarAdmin@2026";
+
+const adminUser: UserData = {
+  id: "admin1",
+  name: "Safar Admin",
+  email: ADMIN_EMAIL,
+  phone: "+91 99999 00000",
+  role: "admin",
+  walletBalance: 0,
+  totalTrips: 0,
+  memberSince: "2023-01-01",
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -99,39 +62,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const login = async (email: string, _password: string, _role: string): Promise<string | false> => {
+  const login = async (email: string, password: string, _role: string): Promise<string | false> => {
     const normalizedEmail = email.toLowerCase().trim();
-    const foundUser = defaultUsers[normalizedEmail];
-    if (foundUser) {
-      setUser(foundUser);
-      await AsyncStorage.setItem("@safargo_user", JSON.stringify(foundUser));
-      return foundUser.role;
+
+    // Admin account — fixed credentials
+    if (normalizedEmail === ADMIN_EMAIL) {
+      if (password !== ADMIN_PASSWORD) return false;
+      setUser(adminUser);
+      await AsyncStorage.setItem("@safargo_user", JSON.stringify(adminUser));
+      return "admin";
     }
+
+    // Registered users (drivers and customers)
     const stored = await AsyncStorage.getItem("@safargo_registered_" + normalizedEmail);
     if (stored) {
-      const u = JSON.parse(stored);
-      setUser(u);
+      const record = JSON.parse(stored) as (UserData | DriverData) & { _pw?: string };
+      if (record._pw && record._pw !== password) return false;
+      const { _pw: _, ...u } = record;
+      setUser(u as UserData | DriverData);
       await AsyncStorage.setItem("@safargo_user", JSON.stringify(u));
       return u.role;
     }
+
     return false;
   };
 
-  const register = async (name: string, email: string, phone: string, _password: string, role: string): Promise<boolean> => {
+  const register = async (name: string, email: string, phone: string, password: string, role: string): Promise<boolean> => {
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Prevent registering with the admin email
+    if (normalizedEmail === ADMIN_EMAIL) return false;
+
+    // Check if email already registered
+    const existing = await AsyncStorage.getItem("@safargo_registered_" + normalizedEmail);
+    if (existing) return false;
+
     const id = Date.now().toString() + Math.random().toString(36).substr(2, 9);
     const newUser: UserData = {
       id,
       name,
-      email: email.toLowerCase().trim(),
+      email: normalizedEmail,
       phone,
       role: role as "customer" | "driver" | "admin",
       walletBalance: 0,
       totalTrips: 0,
       memberSince: new Date().toISOString().split("T")[0],
     };
+    // Store password separately alongside the user record
+    const stored = { ...newUser, _pw: password };
     setUser(newUser);
     await AsyncStorage.setItem("@safargo_user", JSON.stringify(newUser));
-    await AsyncStorage.setItem("@safargo_registered_" + newUser.email, JSON.stringify(newUser));
+    await AsyncStorage.setItem("@safargo_registered_" + normalizedEmail, JSON.stringify(stored));
     return true;
   };
 
@@ -165,7 +146,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(newDriver);
     await AsyncStorage.setItem("@safargo_user", JSON.stringify(newDriver));
-    await AsyncStorage.setItem("@safargo_registered_" + newDriver.email, JSON.stringify(newDriver));
+    // Store driver record with password so they can log back in
+    const storedDriver = { ...newDriver, _pw: payload.password };
+    await AsyncStorage.setItem("@safargo_registered_" + newDriver.email, JSON.stringify(storedDriver));
 
     const existing = await AsyncStorage.getItem("@safargo_pending_drivers");
     const pendingList: DriverData[] = existing ? JSON.parse(existing) : [];
@@ -187,7 +170,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const updated = { ...user, ...updates };
     setUser(updated);
     await AsyncStorage.setItem("@safargo_user", JSON.stringify(updated));
-    await AsyncStorage.setItem("@safargo_registered_" + updated.email, JSON.stringify(updated));
+    // Preserve the stored password when updating profile
+    const storedRaw = await AsyncStorage.getItem("@safargo_registered_" + updated.email);
+    const pw = storedRaw ? (JSON.parse(storedRaw) as any)._pw : undefined;
+    await AsyncStorage.setItem(
+      "@safargo_registered_" + updated.email,
+      JSON.stringify(pw ? { ...updated, _pw: pw } : updated),
+    );
   };
 
   const value = useMemo(
