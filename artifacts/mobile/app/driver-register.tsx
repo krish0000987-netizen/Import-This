@@ -31,8 +31,6 @@ interface DocItem {
   icon: string;
   required: boolean;
   status: DocStatus;
-  number: string;
-  expiry: string;
   uri: string;
 }
 
@@ -63,12 +61,12 @@ export default function DriverRegisterScreen() {
   const [vehicleType, setVehicleType] = useState<"sedan" | "suv">("sedan");
 
   const [docs, setDocs] = useState<DocItem[]>([
-    { key: "driving_license", label: "Driving License (DL)", icon: "card-outline", required: true, status: "pending", number: "", expiry: "", uri: "" },
-    { key: "aadhaar", label: "Aadhaar Card", icon: "finger-print-outline", required: true, status: "pending", number: "", expiry: "", uri: "" },
-    { key: "pan", label: "PAN Card", icon: "id-card-outline", required: true, status: "pending", number: "", expiry: "", uri: "" },
-    { key: "rc", label: "Vehicle RC (Registration)", icon: "document-outline", required: true, status: "pending", number: "", expiry: "", uri: "" },
-    { key: "photo", label: "Profile / Selfie Photo", icon: "camera-outline", required: true, status: "pending", number: "", expiry: "", uri: "" },
-    { key: "insurance", label: "Vehicle Insurance", icon: "shield-checkmark-outline", required: false, status: "pending", number: "", expiry: "", uri: "" },
+    { key: "driving_license", label: "Driving License (DL)", icon: "card-outline", required: true, status: "pending", uri: "" },
+    { key: "aadhaar", label: "Aadhaar Card", icon: "finger-print-outline", required: true, status: "pending", uri: "" },
+    { key: "pan", label: "PAN Card", icon: "id-card-outline", required: true, status: "pending", uri: "" },
+    { key: "rc", label: "Vehicle RC (Registration)", icon: "document-outline", required: true, status: "pending", uri: "" },
+    { key: "photo", label: "Profile / Selfie Photo", icon: "camera-outline", required: true, status: "pending", uri: "" },
+    { key: "insurance", label: "Vehicle Insurance", icon: "shield-checkmark-outline", required: false, status: "pending", uri: "" },
   ]);
 
   const emailRef = useRef<TextInput>(null);
@@ -83,7 +81,7 @@ export default function DriverRegisterScreen() {
   const step1Valid = name.trim() && email.trim() && phone.trim() && password.length >= 6 && acceptedTerms;
   const step2Valid = vehicle.trim() && vehicleNumber.trim();
   const requiredDocs = docs.filter((d) => d.required);
-  const step3Valid = requiredDocs.every((d) => d.status === "uploaded" && d.number.trim());
+  const step3Valid = requiredDocs.every((d) => d.status === "uploaded");
 
   const nextStep = () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -92,10 +90,6 @@ export default function DriverRegisterScreen() {
   const prevStep = () => {
     if (Platform.OS !== "web") Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setStep((s) => s - 1);
-  };
-
-  const updateDoc = (key: string, field: "number" | "expiry" | "status" | "uri", value: string) => {
-    setDocs((prev) => prev.map((d) => d.key === key ? { ...d, [field]: value } : d));
   };
 
   const pickImage = async (key: string, fromCamera = false) => {
@@ -169,10 +163,8 @@ export default function DriverRegisterScreen() {
       const docPayload = docs.map((d) => ({
         type: d.key,
         label: d.label,
-        status: d.status === "uploaded" ? "pending" as const : "pending" as const,
+        status: "pending" as const,
         uploadDate: new Date().toISOString().split("T")[0],
-        expiryDate: d.expiry || undefined,
-        documentNumber: d.number || undefined,
       }));
 
       await registerDriver({
@@ -475,44 +467,6 @@ export default function DriverRegisterScreen() {
                     </View>
                   ) : null}
 
-                  {/* Document number / expiry inputs (shown after upload, not for photo) */}
-                  {doc.status === "uploaded" && doc.key !== "photo" && (
-                    <View style={styles.docInputRow}>
-                      <View
-                        style={[
-                          styles.docInputWrap,
-                          { backgroundColor: isDark ? "#0A0A0A" : "#F5F3EE", flex: 2 },
-                        ]}
-                      >
-                        <TextInput
-                          style={[styles.docInput, { color: colors.text }]}
-                          placeholder="Document number"
-                          placeholderTextColor={isDark ? "#555" : "#B0A89E"}
-                          value={doc.number}
-                          onChangeText={(v) => updateDoc(doc.key, "number", v)}
-                          autoCapitalize="characters"
-                        />
-                      </View>
-                      {(doc.key === "driving_license" ||
-                        doc.key === "rc" ||
-                        doc.key === "insurance") && (
-                        <View
-                          style={[
-                            styles.docInputWrap,
-                            { backgroundColor: isDark ? "#0A0A0A" : "#F5F3EE", flex: 1.5 },
-                          ]}
-                        >
-                          <TextInput
-                            style={[styles.docInput, { color: colors.text }]}
-                            placeholder="Expiry YYYY-MM"
-                            placeholderTextColor={isDark ? "#555" : "#B0A89E"}
-                            value={doc.expiry}
-                            onChangeText={(v) => updateDoc(doc.key, "expiry", v)}
-                          />
-                        </View>
-                      )}
-                    </View>
-                  )}
                 </Animated.View>
               ))}
 
@@ -667,9 +621,6 @@ const styles = StyleSheet.create({
   uploadedText: { fontFamily: "Poppins_500Medium", fontSize: 12, color: "#2ECC71" },
   uploadBtn: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 },
   uploadBtnText: { fontFamily: "Poppins_500Medium", fontSize: 12, color: Colors.gold },
-  docInputRow: { flexDirection: "row", gap: 8 },
-  docInputWrap: { borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10 },
-  docInput: { fontFamily: "Poppins_400Regular", fontSize: 13 },
   infoBox: {
     flexDirection: "row", gap: 10, padding: 14, borderRadius: 12, borderWidth: 1,
     alignItems: "flex-start", marginTop: 8, marginBottom: 8,
