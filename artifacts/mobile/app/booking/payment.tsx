@@ -122,6 +122,7 @@ export default function PaymentScreen() {
         email: (user as any)?.email || "",
         phone: user?.phone || "",
         desc: destination ? `${pickup} → ${destination}` : "Ride Payment",
+        ...(data.isDev ? { isDev: "1" } : {}),
       });
 
       setCheckoutUrl(`${API_BASE}/api/payments/checkout?${urlParams.toString()}`);

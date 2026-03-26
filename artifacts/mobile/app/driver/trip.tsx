@@ -384,8 +384,8 @@ export default function DriverTripScreen() {
               </View>
             </View>
             <View style={[styles.farePaymentRow, { backgroundColor: isDark ? "#1a1a1a" : "#f5f3ee", borderRadius: 10, padding: 10, marginTop: 12 }]}>
-              <Ionicons name="cash-outline" size={16} color={Colors.gold} />
-              <Text style={[styles.farePaymentText, { color: colors.textSecondary }]}>Cash payment at trip end</Text>
+              <Ionicons name="card-outline" size={16} color={Colors.gold} />
+              <Text style={[styles.farePaymentText, { color: colors.textSecondary }]}>Online payment via Razorpay</Text>
             </View>
           </View>
         </Animated.View>

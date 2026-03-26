@@ -49,7 +49,13 @@ router.post("/payments/create-order", async (req, res) => {
   }
   if (existing && existing.status === "created") {
     // Return existing order
-    res.json({ orderId: existing.orderId, amount: existing.amount, keyId: RAZORPAY_KEY_ID });
+    const noKeys = !RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET;
+    res.json({
+      orderId: existing.orderId,
+      amount: existing.amount,
+      keyId: noKeys ? "rzp_test_DEMO" : RAZORPAY_KEY_ID,
+      ...(noKeys ? { isDev: true } : {}),
+    });
     return;
   }
 
@@ -161,9 +167,158 @@ router.get("/payments/status/:rideId", (req, res) => {
 
 // GET /api/payments/checkout — Serves Razorpay Web Checkout HTML
 router.get("/payments/checkout", (req, res) => {
-  const { orderId, amount, key, rideId, name, email, phone, desc } = req.query as Record<string, string>;
+  const { orderId, amount, key, rideId, name, email, phone, desc, isDev } = req.query as Record<string, string>;
+  const amountRupees = Math.round(parseInt(amount || "0") / 100);
+  const isDevMode = isDev === "1" || !key || key === "rzp_test_DEMO";
 
-  const html = `<!DOCTYPE html>
+  const devModeHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta charset="utf-8">
+  <title>Safar Go — Test Payment</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0A0A0A;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 24px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #fff;
+    }
+    .logo { width: 72px; height: 72px; border-radius: 22px; background: #C5A55A18; border: 1.5px solid #C5A55A40; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
+    .logo svg { width: 40px; height: 40px; }
+    .amount { font-size: 44px; font-weight: 800; color: #C5A55A; letter-spacing: -1px; }
+    .title { font-size: 20px; font-weight: 700; color: #fff; margin: 8px 0 6px; }
+    .subtitle { font-size: 13px; color: #666; margin-bottom: 6px; text-align: center; line-height: 1.5; }
+    .dev-badge {
+      background: #F39C1220; border: 1px solid #F39C1240; border-radius: 20px;
+      padding: 5px 14px; font-size: 12px; color: #F39C12; font-weight: 600;
+      margin: 16px 0 28px; display: inline-flex; align-items: center; gap: 6px;
+    }
+    .card {
+      width: 100%; max-width: 360px;
+      background: #141414; border: 1px solid #242424;
+      border-radius: 20px; padding: 24px;
+    }
+    .card-title { font-size: 13px; color: #555; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
+    .method-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0; border-bottom: 1px solid #1e1e1e;
+    }
+    .method-row:last-child { border-bottom: none; }
+    .method-icon { width: 36px; height: 36px; border-radius: 10px; background: #1e1e1e; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px; }
+    .method-label { font-size: 14px; color: #bbb; }
+    .method-sub { font-size: 12px; color: #555; margin-top: 2px; }
+    .btn-success {
+      display: block; width: 100%; max-width: 360px;
+      margin-top: 20px; padding: 17px;
+      background: linear-gradient(135deg, #C5A55A, #A8893A);
+      border: none; border-radius: 14px; cursor: pointer;
+      font-size: 16px; font-weight: 700; color: #0A0A0A;
+      letter-spacing: 0.2px;
+    }
+    .btn-success:active { opacity: 0.85; transform: scale(0.98); }
+    .btn-fail {
+      display: block; width: 100%; max-width: 360px;
+      margin-top: 10px; padding: 14px;
+      background: transparent;
+      border: 1px solid #E74C3C40; border-radius: 14px; cursor: pointer;
+      font-size: 14px; font-weight: 600; color: #E74C3C;
+    }
+    .spinner { width: 36px; height: 36px; border: 3px solid #222; border-top-color: #C5A55A; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 28px auto; display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .processing { font-size: 14px; color: #888; text-align: center; display: none; }
+  </style>
+</head>
+<body>
+  <div class="logo">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#C5A55A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 17H3a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11a2 2 0 0 1 2 2v3"/>
+      <rect x="9" y="11" width="14" height="10" rx="2"/>
+      <circle cx="12" cy="19" r="1"/><circle cx="20" cy="19" r="1"/>
+    </svg>
+  </div>
+
+  <div class="amount">₹${amountRupees.toLocaleString("en-IN")}</div>
+  <div class="title">Safar Go</div>
+  <div class="subtitle">${(desc || "Ride Payment").replace(/</g, "&lt;")}</div>
+  <div class="dev-badge">⚙ Test Mode — No real payment</div>
+
+  <div class="card">
+    <div class="card-title">Simulated payment methods</div>
+    <div class="method-row">
+      <div class="method-icon">💳</div>
+      <div>
+        <div class="method-label">UPI / Cards / Net Banking</div>
+        <div class="method-sub">All payment methods available in production</div>
+      </div>
+    </div>
+    <div class="method-row">
+      <div class="method-icon">🔒</div>
+      <div>
+        <div class="method-label">256-bit SSL Encryption</div>
+        <div class="method-sub">Powered by Razorpay Secure Checkout</div>
+      </div>
+    </div>
+    <div class="method-row">
+      <div class="method-icon">⚡</div>
+      <div>
+        <div class="method-label">Instant verification</div>
+        <div class="method-sub">Payment confirmed in real-time via server</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spinner" id="spinner"></div>
+  <div class="processing" id="processing">Processing payment...</div>
+
+  <button class="btn-success" id="btnPay" onclick="simulatePay()">
+    ✓ &nbsp;Simulate Successful Payment
+  </button>
+  <button class="btn-fail" onclick="simulateFail()">
+    Simulate Payment Failure (for testing)
+  </button>
+
+  <script>
+    var rideId = ${JSON.stringify(rideId || "")};
+    var orderId = ${JSON.stringify(orderId || "")};
+
+    function showSpinner() {
+      document.getElementById('btnPay').style.display = 'none';
+      document.getElementById('spinner').style.display = 'block';
+      document.getElementById('processing').style.display = 'block';
+    }
+
+    function simulatePay() {
+      showSpinner();
+      var mockPaymentId = 'pay_MOCK_' + Date.now();
+      var mockSignature = 'sig_MOCK_' + Math.random().toString(36).substring(2);
+      setTimeout(function() {
+        window.location.href =
+          'https://payment.safargo.local/success' +
+          '?payment_id=' + encodeURIComponent(mockPaymentId) +
+          '&order_id=' + encodeURIComponent(orderId) +
+          '&signature=' + encodeURIComponent(mockSignature) +
+          '&ride_id=' + encodeURIComponent(rideId);
+      }, 800);
+    }
+
+    function simulateFail() {
+      window.location.href =
+        'https://payment.safargo.local/failed' +
+        '?error=' + encodeURIComponent('Simulated payment failure for testing') +
+        '&rideId=' + encodeURIComponent(rideId);
+    }
+  </script>
+</body>
+</html>`;
+
+  const liveModeHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -182,14 +337,15 @@ router.get("/payments/checkout", (req, res) => {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       color: #fff;
     }
-    .logo { width: 64px; height: 64px; border-radius: 20px; background: #C5A55A20; border: 1.5px solid #C5A55A40; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
-    .logo svg { width: 36px; height: 36px; }
+    .logo { width: 72px; height: 72px; border-radius: 22px; background: #C5A55A18; border: 1.5px solid #C5A55A40; display: flex; align-items: center; justify-content: center; margin-bottom: 24px; }
+    .logo svg { width: 40px; height: 40px; }
+    .amount { font-size: 44px; font-weight: 800; color: #C5A55A; letter-spacing: -1px; margin-bottom: 4px; }
     h2 { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 8px; }
-    p { font-size: 14px; color: #888; margin-bottom: 24px; text-align: center; }
-    .amount { font-size: 32px; font-weight: 800; color: #C5A55A; margin-bottom: 4px; }
-    .spinner { width: 40px; height: 40px; border: 3px solid #222; border-top-color: #C5A55A; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 20px auto; }
+    p { font-size: 14px; color: #666; margin-bottom: 24px; text-align: center; }
+    .spinner { width: 44px; height: 44px; border: 3px solid #1e1e1e; border-top-color: #C5A55A; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 24px auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .error-box { background: #E74C3C20; border: 1px solid #E74C3C40; border-radius: 12px; padding: 16px 24px; color: #E74C3C; font-size: 14px; text-align: center; max-width: 320px; margin: 20px; }
+    .status { font-size: 13px; color: #555; text-align: center; margin-top: 8px; }
+    .error-box { background: #E74C3C18; border: 1px solid #E74C3C35; border-radius: 14px; padding: 18px 22px; color: #E74C3C; font-size: 14px; text-align: center; max-width: 320px; margin: 20px; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -200,10 +356,11 @@ router.get("/payments/checkout", (req, res) => {
       <circle cx="12" cy="19" r="1"/><circle cx="20" cy="19" r="1"/>
     </svg>
   </div>
-  <div class="amount">₹${Math.round(parseInt(amount || "0") / 100)}</div>
+  <div class="amount">₹${amountRupees.toLocaleString("en-IN")}</div>
   <h2>Safar Go</h2>
-  <p>Secure Ride Payment</p>
+  <p>Opening secure payment…</p>
   <div class="spinner" id="spinner"></div>
+  <div class="status" id="status">Preparing Razorpay checkout</div>
 
   <script>
     (function() {
@@ -217,7 +374,9 @@ router.get("/payments/checkout", (req, res) => {
 
       if (!key || !orderId) {
         document.getElementById('spinner').style.display = 'none';
-        document.body.insertAdjacentHTML('beforeend', '<div class="error-box">Payment configuration error. Please go back and try again.</div>');
+        document.getElementById('status').style.display = 'none';
+        document.body.insertAdjacentHTML('beforeend',
+          '<div class="error-box">Payment configuration error.<br>Please go back and try again.</div>');
         return;
       }
 
@@ -228,37 +387,52 @@ router.get("/payments/checkout", (req, res) => {
         name: 'Safar Go',
         description: ${JSON.stringify(desc || "Ride Payment")},
         order_id: orderId,
-        prefill: { name: prefillName, email: prefillEmail, contact: prefillPhone },
+        prefill: {
+          name: prefillName,
+          email: prefillEmail,
+          contact: prefillPhone
+        },
         theme: { color: '#C5A55A' },
         modal: {
           backdropclose: false,
           escape: false,
           ondismiss: function() {
-            window.location.href = 'https://payment.safargo.local/cancelled?rideId=' + encodeURIComponent(rideId);
+            window.location.href =
+              'https://payment.safargo.local/cancelled?rideId=' + encodeURIComponent(rideId);
           }
         },
         handler: function(response) {
-          document.getElementById('spinner').style.display = 'block';
-          window.location.href = 'https://payment.safargo.local/success?payment_id=' + encodeURIComponent(response.razorpay_payment_id) + '&order_id=' + encodeURIComponent(response.razorpay_order_id) + '&signature=' + encodeURIComponent(response.razorpay_signature) + '&ride_id=' + encodeURIComponent(rideId);
+          document.getElementById('status').textContent = 'Verifying payment…';
+          window.location.href =
+            'https://payment.safargo.local/success' +
+            '?payment_id=' + encodeURIComponent(response.razorpay_payment_id) +
+            '&order_id=' + encodeURIComponent(response.razorpay_order_id) +
+            '&signature=' + encodeURIComponent(response.razorpay_signature) +
+            '&ride_id=' + encodeURIComponent(rideId);
         }
       };
 
       var rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function(r) {
-        window.location.href = 'https://payment.safargo.local/failed?error=' + encodeURIComponent((r.error && r.error.description) || 'Payment failed') + '&rideId=' + encodeURIComponent(rideId);
+        var errMsg = (r.error && r.error.description) ? r.error.description : 'Payment failed';
+        window.location.href =
+          'https://payment.safargo.local/failed' +
+          '?error=' + encodeURIComponent(errMsg) +
+          '&rideId=' + encodeURIComponent(rideId);
       });
 
       setTimeout(function() {
-        document.getElementById('spinner').style.display = 'none';
+        document.getElementById('status').textContent = 'Loading Razorpay…';
         rzp.open();
-      }, 600);
+      }, 500);
     })();
   </script>
 </body>
 </html>`;
 
   res.setHeader("Content-Type", "text/html");
-  res.send(html);
+  res.setHeader("Cache-Control", "no-store");
+  res.send(isDevMode ? devModeHtml : liveModeHtml);
 });
 
 export default router;
