@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   Alert,
   Modal,
   TextInput,
+  ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@/components/icons";
@@ -16,8 +18,11 @@ import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown, FadeIn } from "react-native-reanimated";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useData } from "@/contexts/DataContext";
 import { DriverData } from "@/constants/data";
+
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
+  : "http://localhost:5000";
 
 const kycColors: Record<string, string> = {
   approved: "#2ECC71",
@@ -34,6 +39,15 @@ const docStatusColors: Record<string, string> = {
 };
 
 type Tab = "applications" | "approved" | "all";
+
+async function apiCall(path: string, method = "GET", body?: object) {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  return res.ok;
+}
 
 function RejectReasonModal({
   visible,
@@ -85,22 +99,25 @@ function DriverDetailModal({
   visible,
   onClose,
   driver,
+  onActionDone,
 }: {
   visible: boolean;
   onClose: () => void;
   driver: DriverData | null;
+  onActionDone: () => void;
 }) {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const { toggleDriverBlock, updateDriverDocument, getDriverReviews, approveDriver, rejectDriver } = useData();
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
 
   if (!driver) return null;
-  const driverReviews = getDriverReviews(driver.id);
 
-  const handleVerifyDoc = (docType: string) => {
-    updateDriverDocument(driver.id, docType, { status: "verified" });
-    if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  const handleVerifyDoc = async (docType: string) => {
+    const ok = await apiCall(`/api/admin/drivers/${driver.id}/documents/${docType}/verify`, "POST");
+    if (ok) {
+      if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      onActionDone();
+    }
   };
 
   const handleRejectDoc = (docType: string) => {
@@ -109,7 +126,12 @@ function DriverDetailModal({
       {
         text: "Reject",
         style: "destructive",
-        onPress: () => updateDriverDocument(driver.id, docType, { status: "rejected", rejectionReason: "Document unclear or expired" }),
+        onPress: async () => {
+          await apiCall(`/api/admin/drivers/${driver.id}/documents/${docType}/reject`, "POST", {
+            reason: "Document unclear or expired",
+          });
+          onActionDone();
+        },
       },
     ]);
   };
@@ -119,9 +141,10 @@ function DriverDetailModal({
       { text: "Cancel", style: "cancel" },
       {
         text: "Approve",
-        onPress: () => {
-          approveDriver(driver.id);
+        onPress: async () => {
+          await apiCall(`/api/admin/drivers/${driver.id}/approve`, "POST");
           if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          onActionDone();
           onClose();
         },
       },
@@ -229,12 +252,8 @@ function DriverDetailModal({
                             <Text style={[detailStyles.docLabel, { color: colors.text }]}>{doc.label}</Text>
                             <Text style={[detailStyles.docStatus, { color: docColor }]}>
                               {doc.status.replace("_", " ").charAt(0).toUpperCase() + doc.status.replace("_", " ").slice(1)}
-                              {doc.docNumber ? ` · ${doc.docNumber}` : ""}
                               {doc.uploadDate ? ` · ${doc.uploadDate}` : ""}
                             </Text>
-                            {doc.expiryDate ? (
-                              <Text style={[detailStyles.docExpiry, { color: colors.textTertiary }]}>Exp: {doc.expiryDate}</Text>
-                            ) : null}
                             {doc.rejectionReason ? (
                               <Text style={[detailStyles.docRejection, { color: "#E74C3C" }]}>{doc.rejectionReason}</Text>
                             ) : null}
@@ -260,27 +279,6 @@ function DriverDetailModal({
                     );
                   })}
                 </View>
-
-                {driverReviews.length > 0 && (
-                  <>
-                    <Text style={[detailStyles.sectionTitle, { color: colors.text }]}>Reviews ({driverReviews.length})</Text>
-                    {driverReviews.map((review) => (
-                      <View key={review.id} style={[detailStyles.reviewCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 4 }}>
-                          {[1, 2, 3, 4, 5].map((s) => (
-                            <Ionicons key={s} name={s <= review.rating ? "star" : "star-outline"} size={12} color={Colors.gold} />
-                          ))}
-                          <Text style={[{ fontFamily: "Poppins_400Regular", fontSize: 11, marginLeft: 4 }, { color: colors.textTertiary }]}>
-                            {review.date}
-                          </Text>
-                        </View>
-                        {review.comment ? (
-                          <Text style={[detailStyles.reviewComment, { color: colors.textSecondary }]}>{review.comment}</Text>
-                        ) : null}
-                      </View>
-                    ))}
-                  </>
-                )}
 
                 {driver.kycStatus === "submitted" && (
                   <View style={detailStyles.kycActions}>
@@ -311,7 +309,11 @@ function DriverDetailModal({
                         {
                           text: driver.isBlocked ? "Unblock" : "Block",
                           style: driver.isBlocked ? "default" : "destructive",
-                          onPress: () => toggleDriverBlock(driver.id),
+                          onPress: async () => {
+                            await apiCall(`/api/admin/drivers/${driver.id}/block`, "POST");
+                            onActionDone();
+                            onClose();
+                          },
                         },
                       ]
                     );
@@ -336,10 +338,11 @@ function DriverDetailModal({
       <RejectReasonModal
         visible={rejectModalVisible}
         onClose={() => setRejectModalVisible(false)}
-        onConfirm={(reason) => {
-          rejectDriver(driver.id, reason);
+        onConfirm={async (reason) => {
+          await apiCall(`/api/admin/drivers/${driver.id}/reject`, "POST", { reason });
           setRejectModalVisible(false);
           if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          onActionDone();
           onClose();
         }}
       />
@@ -455,11 +458,33 @@ function DriverCard({
 export default function DriversScreen() {
   const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { drivers, approveDriver, rejectDriver } = useData();
+
+  const [drivers, setDrivers] = useState<DriverData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedDriver, setSelectedDriver] = useState<DriverData | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("applications");
   const [rejectModalVisible, setRejectModalVisible] = useState(false);
   const [pendingRejectDriver, setPendingRejectDriver] = useState<DriverData | null>(null);
+
+  const fetchDrivers = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/drivers`);
+      if (res.ok) {
+        const data = await res.json();
+        setDrivers(data);
+      }
+    } catch { /* ignore */ }
+    finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDrivers();
+  }, [fetchDrivers]);
 
   const applications = useMemo(() => drivers.filter((d) => d.kycStatus === "submitted"), [drivers]);
   const approved = useMemo(() => drivers.filter((d) => d.kycStatus === "approved"), [drivers]);
@@ -475,9 +500,10 @@ export default function DriversScreen() {
       { text: "Cancel", style: "cancel" },
       {
         text: "Approve",
-        onPress: () => {
-          approveDriver(driver.id);
+        onPress: async () => {
+          await apiCall(`/api/admin/drivers/${driver.id}/approve`, "POST");
           if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          fetchDrivers();
         },
       },
     ]);
@@ -497,73 +523,92 @@ export default function DriversScreen() {
   return (
     <>
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <FlatList
-          data={tabDrivers}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={{
-            paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) + 16,
-            paddingBottom: 100,
-            paddingHorizontal: 20,
-          }}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={
-            <>
-              <Text style={[styles.title, { color: colors.text }]}>Manage Drivers</Text>
-              <View style={[styles.tabBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                {tabs.map((tab) => {
-                  const isActive = activeTab === tab.key;
-                  return (
-                    <Pressable
-                      key={tab.key}
-                      onPress={() => setActiveTab(tab.key)}
-                      style={[styles.tab, isActive && { backgroundColor: Colors.gold }]}
-                    >
-                      <Text style={[styles.tabLabel, { color: isActive ? "#0A0A0A" : colors.textSecondary }]}>
-                        {tab.label}
-                      </Text>
-                      {tab.count !== undefined && tab.count > 0 && (
-                        <View style={[styles.tabBadge, { backgroundColor: isActive ? "#0A0A0A30" : Colors.gold + "30" }]}>
-                          <Text style={[styles.tabBadgeText, { color: isActive ? "#0A0A0A" : Colors.gold }]}>{tab.count}</Text>
-                        </View>
-                      )}
-                    </Pressable>
-                  );
-                })}
-              </View>
-              {tabDrivers.length === 0 && (
-                <Animated.View entering={FadeIn.duration(300)} style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                  <Ionicons name={activeTab === "applications" ? "document-text-outline" : "people-outline"} size={36} color={colors.textSecondary} />
-                  <Text style={[styles.emptyTitle, { color: colors.text }]}>
-                    {activeTab === "applications" ? "No Pending Applications" : activeTab === "approved" ? "No Approved Drivers" : "No Drivers"}
-                  </Text>
-                  <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
-                    {activeTab === "applications" ? "New driver applications will appear here." : "Approved drivers will appear here."}
-                  </Text>
-                </Animated.View>
-              )}
-            </>
-          }
-          renderItem={({ item, index }) => (
-            <DriverCard
-              driver={item}
-              index={index}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              onTap={setSelectedDriver}
-            />
-          )}
-        />
+        {loading ? (
+          <View style={styles.loadingWrap}>
+            <ActivityIndicator color={Colors.gold} size="large" />
+          </View>
+        ) : (
+          <FlatList
+            data={tabDrivers}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{
+              paddingTop: insets.top + (Platform.OS === "web" ? 67 : 0) + 16,
+              paddingBottom: 100,
+              paddingHorizontal: 20,
+            }}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={() => fetchDrivers(true)} tintColor={Colors.gold} />
+            }
+            ListHeaderComponent={
+              <>
+                <Text style={[styles.title, { color: colors.text }]}>Manage Drivers</Text>
+                <View style={[styles.tabBar, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                  {tabs.map((tab) => {
+                    const isActive = activeTab === tab.key;
+                    return (
+                      <Pressable
+                        key={tab.key}
+                        onPress={() => setActiveTab(tab.key)}
+                        style={[styles.tab, isActive && { backgroundColor: Colors.gold }]}
+                      >
+                        <Text style={[styles.tabLabel, { color: isActive ? "#0A0A0A" : colors.textSecondary }]}>
+                          {tab.label}
+                        </Text>
+                        {tab.count !== undefined && tab.count > 0 && (
+                          <View style={[styles.tabBadge, { backgroundColor: isActive ? "#0A0A0A30" : Colors.gold + "30" }]}>
+                            <Text style={[styles.tabBadgeText, { color: isActive ? "#0A0A0A" : Colors.gold }]}>{tab.count}</Text>
+                          </View>
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {tabDrivers.length === 0 && (
+                  <Animated.View entering={FadeIn.duration(300)} style={[styles.emptyCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+                    <Ionicons name={activeTab === "applications" ? "document-text-outline" : "people-outline"} size={36} color={colors.textSecondary} />
+                    <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                      {activeTab === "applications" ? "No Pending Applications" : activeTab === "approved" ? "No Approved Drivers" : "No Drivers Yet"}
+                    </Text>
+                    <Text style={[styles.emptyText, { color: colors.textSecondary }]}>
+                      {activeTab === "applications"
+                        ? "New driver applications will appear here."
+                        : activeTab === "approved"
+                        ? "Approved drivers will appear here."
+                        : "Register drivers via the app to see them here."}
+                    </Text>
+                  </Animated.View>
+                )}
+              </>
+            }
+            renderItem={({ item, index }) => (
+              <DriverCard
+                driver={item}
+                index={index}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                onTap={setSelectedDriver}
+              />
+            )}
+          />
+        )}
       </View>
 
-      <DriverDetailModal visible={!!selectedDriver} onClose={() => setSelectedDriver(null)} driver={selectedDriver} />
+      <DriverDetailModal
+        visible={!!selectedDriver}
+        onClose={() => setSelectedDriver(null)}
+        driver={selectedDriver}
+        onActionDone={fetchDrivers}
+      />
 
       <RejectReasonModal
         visible={rejectModalVisible}
         onClose={() => { setRejectModalVisible(false); setPendingRejectDriver(null); }}
-        onConfirm={(reason) => {
+        onConfirm={async (reason) => {
           if (pendingRejectDriver) {
-            rejectDriver(pendingRejectDriver.id, reason);
+            await apiCall(`/api/admin/drivers/${pendingRejectDriver.id}/reject`, "POST", { reason });
             if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+            fetchDrivers();
           }
           setRejectModalVisible(false);
           setPendingRejectDriver(null);
@@ -612,11 +657,8 @@ const detailStyles = StyleSheet.create({
   docDot: { width: 10, height: 10, borderRadius: 5, marginTop: 3 },
   docLabel: { fontFamily: "Poppins_500Medium", fontSize: 13 },
   docStatus: { fontFamily: "Poppins_400Regular", fontSize: 11, marginTop: 1 },
-  docExpiry: { fontFamily: "Poppins_400Regular", fontSize: 11, marginTop: 1 },
   docRejection: { fontFamily: "Poppins_400Regular", fontSize: 11, marginTop: 2, fontStyle: "italic" },
   docAction: { width: 32, height: 32, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  reviewCard: { borderRadius: 12, borderWidth: 1, padding: 12, marginBottom: 8 },
-  reviewComment: { fontFamily: "Poppins_400Regular", fontSize: 13 },
   kycActions: { gap: 10, marginTop: 16, marginBottom: 8 },
   kycBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 14 },
   kycBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
@@ -626,6 +668,7 @@ const detailStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  loadingWrap: { flex: 1, alignItems: "center", justifyContent: "center" },
   title: { fontFamily: "PlayfairDisplay_700Bold", fontSize: 28, marginBottom: 16 },
   tabBar: { flexDirection: "row", borderRadius: 14, borderWidth: 1, padding: 4, marginBottom: 20, gap: 4 },
   tab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 9, borderRadius: 10 },

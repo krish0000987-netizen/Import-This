@@ -1,4 +1,4 @@
-modules = ["nodejs-24"]
+modules = ["nodejs-24", "postgresql-16"]
 
 [[artifacts]]
 id = "artifacts/api-server"
@@ -32,3 +32,6 @@ OLA_API_KEY = "qTfk6i2ooShE33o4DU6a13p1i5RJPS2r9T5KW9a4"
 OLA_CLIENT_ID = "e03e6ef0-e34f-4920-acbd-4b14472d8cfd"
 OLA_CLIENT_SECRET = "555cc0cf62a74b54810983978e1b96ac"
 EXPO_PUBLIC_OLA_API_KEY = "qTfk6i2ooShE33o4DU6a13p1i5RJPS2r9T5KW9a4"
+
+[nix]
+channel = "stable-25_05"

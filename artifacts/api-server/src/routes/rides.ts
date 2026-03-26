@@ -8,6 +8,9 @@ import {
   getIO,
   type RideRecord,
 } from "../lib/io";
+import { db } from "@workspace/db";
+import { sgRides, sgDrivers } from "@workspace/db/schema";
+import { eq, sql } from "drizzle-orm";
 
 const router = Router();
 
@@ -167,7 +170,7 @@ router.post("/rides/:rideId/accept", (req, res) => {
 // ── POST /api/rides/:rideId/complete ─────────────────────────────────────
 // Called (internally via socket) when payment is confirmed.
 // Also exposed as REST for robustness.
-router.post("/rides/:rideId/complete", (req, res) => {
+router.post("/rides/:rideId/complete", async (req, res) => {
   const { rideId } = req.params;
   const ride = ridesStore.get(rideId);
   if (!ride) {
@@ -180,6 +183,48 @@ router.post("/rides/:rideId/complete", (req, res) => {
   if (ride.driverId) {
     activeDriverRides.delete(ride.driverId);
     logger.info({ rideId, driverId: ride.driverId }, "Ride completed — driver freed");
+  }
+
+  // Persist to database
+  try {
+    await db.insert(sgRides).values({
+      id: ride.rideId,
+      pickup: ride.pickup,
+      dropLocation: ride.drop,
+      distanceKm: String(ride.distanceKm),
+      durationMin: ride.durationMin,
+      fare: String(ride.fare),
+      vehicleType: ride.vehicleType,
+      riderName: ride.riderName,
+      driverId: ride.driverId ?? null,
+      driverName: ride.driverName ?? null,
+      driverVehicle: ride.driverVehicle ?? null,
+      driverVehicleNumber: ride.driverVehicleNumber ?? null,
+      status: "completed",
+      createdAt: ride.createdAt,
+      completedAt: Date.now(),
+    }).onConflictDoUpdate({
+      target: sgRides.id,
+      set: { status: "completed", completedAt: Date.now(), driverId: ride.driverId ?? null, driverName: ride.driverName ?? null },
+    });
+
+    // Update driver stats
+    if (ride.driverId) {
+      const commission = ride.fare * 0.15;
+      const driverEarnings = ride.fare - commission;
+      await db
+        .update(sgDrivers)
+        .set({
+          completedTrips: sql`completed_trips + 1`,
+          totalEarnings: sql`total_earnings::numeric + ${driverEarnings}`,
+          walletBalance: sql`wallet_balance::numeric + ${driverEarnings}`,
+        })
+        .where(eq(sgDrivers.id, ride.driverId));
+    }
+
+    logger.info({ rideId }, "Ride persisted to DB");
+  } catch (err) {
+    logger.error({ err, rideId }, "Failed to persist ride to DB");
   }
 
   res.json({ success: true });

@@ -3,6 +3,10 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { UserData, DriverData } from "@/constants/data";
 import { notifyDriverRegistered } from "@/services/driverBridge";
 
+const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
+  ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
+  : "http://localhost:5000";
+
 interface RegisterDriverPayload {
   name: string;
   email: string;
@@ -156,6 +160,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await AsyncStorage.setItem("@safargo_pending_drivers", JSON.stringify(pendingList));
 
     notifyDriverRegistered(newDriver);
+
+    // Also register on the server for admin panel visibility
+    try {
+      await fetch(`${API_BASE}/api/drivers/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id,
+          name: newDriver.name,
+          email: newDriver.email,
+          phone: newDriver.phone,
+          passwordHash: payload.password,
+          vehicle: newDriver.vehicle,
+          vehicleNumber: newDriver.vehicleNumber,
+          vehicleType: (payload as any).vehicleType ?? "sedan",
+          documents: payload.documents.map((d) => ({
+            type: d.type,
+            label: d.label,
+            status: d.status,
+          })),
+        }),
+      });
+    } catch {
+      // Registration still succeeds locally even if server is unreachable
+    }
 
     return true;
   };
