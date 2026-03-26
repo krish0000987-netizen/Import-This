@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     // Admin account — fixed credentials
     if (normalizedEmail === ADMIN_EMAIL) {
-      if (password !== ADMIN_PASSWORD) return false;
+      if (password.trim() !== ADMIN_PASSWORD) return false;
       setUser(adminUser);
       await AsyncStorage.setItem("@safargo_user", JSON.stringify(adminUser));
       return "admin";

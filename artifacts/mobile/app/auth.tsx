@@ -69,7 +69,7 @@ export default function AuthScreen() {
     }
     setLoading(true);
     try {
-      const result = await login(email.trim(), password, "customer");
+      const result = await login(email.trim(), password.trim(), "customer");
       if (result) {
         if (result === "admin") router.replace("/admin");
         else if (result === "driver") router.replace("/driver");
