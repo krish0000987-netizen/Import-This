@@ -44,8 +44,14 @@ export function emitCancelRide(rideId: string) {
   if (socket) socket.emit("cancelRide", { rideId });
 }
 
-export function emitDriverOnline(driverId: string) {
-  if (socket) socket.emit("driverOnline", { driverId });
+export function emitDriverOnline(payload: {
+  driverId: string;
+  driverName?: string;
+  vehicle?: string;
+  vehicleNumber?: string;
+  rating?: number;
+}) {
+  if (socket) socket.emit("driverOnline", payload);
 }
 
 export function emitDriverOffline(driverId: string) {

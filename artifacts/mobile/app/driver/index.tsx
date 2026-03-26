@@ -292,12 +292,22 @@ export default function DriverDashboard() {
         }
       };
 
+      const handleRideAcceptError = (data: { message: string; activeRideId?: string }) => {
+        setAccepting(false);
+        pendingRideRef.current = null;
+        setPendingRide(null);
+        Alert.alert("Cannot Accept Ride", data.message || "You already have an active ride in progress.");
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      };
+
       socket.on("newRideRequest", handleNewRide);
       socket.on("rideUnavailable", handleRideUnavailable);
+      socket.on("rideAcceptError", handleRideAcceptError);
 
       return () => {
         socket.off("newRideRequest", handleNewRide);
         socket.off("rideUnavailable", handleRideUnavailable);
+        socket.off("rideAcceptError", handleRideAcceptError);
         emitDriverOffline(driver?.id || "driver-1");
       };
     } else {
@@ -318,20 +328,32 @@ export default function DriverDashboard() {
     setAccepting(true);
     const driverId = driver?.id || "driver-1";
     try {
-      // Emit socket accept → notifies customer in real-time
+      // First emit socket event for real-time — server will validate there too
       emitAcceptRide(pendingRide.rideId, driverId);
 
-      // Also update REST backend state
-      await fetch(`${API_BASE}/api/rides/${pendingRide.rideId}/accept`, {
+      // Confirm via REST (server enforces the single-ride rule)
+      const res = await fetch(`${API_BASE}/api/rides/${pendingRide.rideId}/accept`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ driverId, driverName: driver?.name }),
-      }).catch(() => {});
+      });
+
+      if (res.status === 409) {
+        const err = await res.json().catch(() => ({}));
+        pendingRideRef.current = null;
+        setPendingRide(null);
+        Alert.alert(
+          "Cannot Accept Ride",
+          err.error || "You already have an active ride. Please complete it first.",
+        );
+        if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        return;
+      }
 
       if (Platform.OS !== "web") Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       pendingRideRef.current = null;
       setPendingRide(null);
-      setTimeout(fetchStats, 3000); // refresh stats after navigation
+      setTimeout(fetchStats, 3000);
       router.push(`/driver/trip?rideId=${pendingRide.rideId}` as any);
     } catch {
       Alert.alert("Error", "Could not accept ride. Please try again.");

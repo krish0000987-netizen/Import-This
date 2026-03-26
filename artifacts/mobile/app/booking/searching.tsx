@@ -130,6 +130,23 @@ export default function SearchingDriver() {
     });
 
     const rideId = params.bookingId || `SG${Date.now().toString().slice(-6)}`;
+
+    // Persist ride on server via REST (also triggers broadcast to online drivers)
+    fetch(`${API_BASE}/api/rides/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        rideId,
+        pickup: params.pickup || "Pickup",
+        drop: params.destination || "Destination",
+        distanceKm: parseFloat(params.distanceKm || "0"),
+        durationMin: parseFloat(params.durationMin || "0"),
+        fare: parseFloat(params.fare || "0"),
+        vehicleType: params.vehicleType || "sedan",
+      }),
+    }).catch(() => {});
+
+    // Also emit socket event so drivers get notified immediately
     emitFindDriver({
       rideId,
       pickup: params.pickup || "Pickup",
@@ -159,13 +176,18 @@ export default function SearchingDriver() {
         const res = await fetch(`${API_BASE}/api/rides/${rideId}/status`);
         if (!res.ok) return;
         const data = await res.json();
-        if (data.status === "no_driver" || data.status === "cancelled") {
+        if (data.status === "cancelled") {
           clearInterval(pollTimer);
           clearInterval(dotsTimer);
           handleNoDrivers();
-        } else if (data.status === "assigned") {
+        } else if (data.status === "accepted" || data.status === "started") {
           clearInterval(pollTimer);
-          navigateToAssigned({ driverName: data.driverName });
+          navigateToAssigned({
+            driverName: data.driverName,
+            vehicle: data.driverVehicle,
+            vehicleNumber: data.driverVehicleNumber,
+            rating: data.driverRating,
+          });
         }
       } catch { /* network error — keep polling */ }
     }, 5000);

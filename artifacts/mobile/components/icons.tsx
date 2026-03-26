@@ -69,6 +69,8 @@ import {
   XCircle,
   Locate,
   Zap,
+  CreditCard,
+  Gauge,
 } from "lucide-react-native";
 
 type SvgIconProps = {
@@ -97,6 +99,8 @@ const ICON_MAP: Record<string, SvgIconComponent> = {
   "car-outline": Car,
   "car-sport": Car,
   "car-sport-outline": Car,
+  card: CreditCard,
+  "card-outline": CreditCard,
   cash: Banknote,
   "cash-outline": Banknote,
   chatbubble: MessageCircle,
@@ -161,6 +165,8 @@ const ICON_MAP: Record<string, SvgIconComponent> = {
   "remove-circle": MinusCircle,
   "search-outline": Search,
   send: Send,
+  speedometer: Gauge,
+  "speedometer-outline": Gauge,
   settings: Settings,
   "settings-outline": Settings,
   "share-outline": Share2,
