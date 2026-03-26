@@ -21,7 +21,7 @@ import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { calculateFare } from "@/constants/data";
+import { usePricing } from "@/contexts/PricingContext";
 import { useData } from "@/contexts/DataContext";
 import { connectSocket } from "@/services/socketService";
 import { isStateSupported } from "@/constants/supportedLocations";
@@ -78,6 +78,7 @@ export default function CreateBooking() {
 
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
+  const { calculateFare } = usePricing();
 
   const curatedDest = getAllDestinations().find((d) => d.id === destinationId);
   const isDynamic = !curatedDest && !!dynDestName;

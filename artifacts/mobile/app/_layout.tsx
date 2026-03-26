@@ -9,6 +9,7 @@ import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { DataProvider } from "@/contexts/DataContext";
+import { PricingProvider } from "@/contexts/PricingContext";
 import { useFonts } from "expo-font";
 import {
   PlayfairDisplay_700Bold,
@@ -73,7 +74,9 @@ export default function RootLayout() {
             <ThemeProvider>
               <AuthProvider>
                 <DataProvider>
-                  <RootLayoutNav />
+                  <PricingProvider>
+                    <RootLayoutNav />
+                  </PricingProvider>
                 </DataProvider>
               </AuthProvider>
             </ThemeProvider>

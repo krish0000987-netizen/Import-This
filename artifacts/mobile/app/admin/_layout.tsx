@@ -108,6 +108,14 @@ function ClassicTabLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="pricing"
+        options={{
+          title: "Pricing",
+          tabBarItemStyle: { display: "none" },
+          headerShown: false,
+        }}
+      />
     </Tabs>
   );
 }

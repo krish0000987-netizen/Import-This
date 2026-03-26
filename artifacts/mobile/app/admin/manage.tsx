@@ -23,6 +23,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import Colors from "@/constants/colors";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePricing } from "@/contexts/PricingContext";
 import { useData } from "@/contexts/DataContext";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
@@ -33,6 +34,7 @@ export default function ManageScreen() {
   const insets = useSafeAreaInsets();
   const { colors, isDark, toggleTheme } = useTheme();
   const { logout } = useAuth();
+  const { config: pricingConfig } = usePricing();
   const {
     getStats, coupons, addCoupon, updateCoupon, deleteCoupon,
     tickets, updateTicket, withdrawals, updateWithdrawal,
@@ -293,6 +295,38 @@ export default function ManageScreen() {
               ))
             )}
           </View>
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(80).duration(500)}>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Pricing Settings</Text>
+          <Pressable
+            onPress={() => router.push("/admin/pricing")}
+            style={[styles.section, { backgroundColor: colors.surface, borderColor: colors.border, padding: 0 }]}
+          >
+            <View style={styles.pricingRow}>
+              <View style={[styles.pricingIcon, { backgroundColor: Colors.gold + "18" }]}>
+                <Ionicons name="pricetag-outline" size={22} color={Colors.gold} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.pricingTitle, { color: colors.text }]}>Fare Rate Management</Text>
+                <Text style={[styles.pricingSub, { color: colors.textSecondary }]}>
+                  Sedan ₹{pricingConfig.sedanRateUpto10km}/₹{pricingConfig.sedanRateAfter10km} · SUV ₹{pricingConfig.suvRateUpto10km}/₹{pricingConfig.suvRateAfter10km} per km
+                </Text>
+                <View style={styles.pricingBadges}>
+                  <View style={[styles.pricingBadge, { backgroundColor: "#3498DB15" }]}>
+                    <Text style={[styles.pricingBadgeText, { color: "#3498DB" }]}>Slab: {pricingConfig.thresholdKm} km</Text>
+                  </View>
+                  {pricingConfig.dynamicPricingEnabled && (
+                    <View style={[styles.pricingBadge, { backgroundColor: "#E74C3C15" }]}>
+                      <Ionicons name="trending-up" size={10} color="#E74C3C" />
+                      <Text style={[styles.pricingBadgeText, { color: "#E74C3C" }]}>Surge {pricingConfig.surgeMultiplier.toFixed(1)}×</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+            </View>
+          </Pressable>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(100).duration(500)}>
@@ -632,6 +666,13 @@ const styles = StyleSheet.create({
   addBtnText: { fontFamily: "Poppins_600SemiBold", fontSize: 12 },
   section: { borderRadius: 16, borderWidth: 1, overflow: "hidden", marginBottom: 24, padding: 16 },
   divider: { height: 1, marginVertical: 8 },
+  pricingRow: { flexDirection: "row", alignItems: "center", gap: 14, padding: 16 },
+  pricingIcon: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  pricingTitle: { fontFamily: "Poppins_600SemiBold", fontSize: 15, marginBottom: 2 },
+  pricingSub: { fontFamily: "Poppins_400Regular", fontSize: 12 },
+  pricingBadges: { flexDirection: "row", gap: 6, marginTop: 6, flexWrap: "wrap" },
+  pricingBadge: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  pricingBadgeText: { fontFamily: "Poppins_500Medium", fontSize: 11 },
   commissionRow: { flexDirection: "row", alignItems: "center" },
   commissionLabel: { fontFamily: "Poppins_600SemiBold", fontSize: 15 },
   commissionSub: { fontFamily: "Poppins_400Regular", fontSize: 12 },
