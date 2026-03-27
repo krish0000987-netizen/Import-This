@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — Safar Go | Your Data is Safe With Us</title>
+  <meta name="description" content="Safar Go's privacy policy. Learn how we collect, use, and protect your personal data when you use our outstation taxi service." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #C5A55A;
+      --gold-light: #D4BA7A;
+      --gold-dark: #A88B3D;
+      --gold-glow: rgba(197, 165, 90, 0.12);
+      --bg: #0A0A0A;
+      --surface: #141410;
+      --surface-2: #1E1E1A;
+      --border: rgba(197, 165, 90, 0.12);
+      --text: #F5F5F5;
+      --text-sec: rgba(245, 245, 245, 0.6);
+      --text-ter: rgba(245, 245, 245, 0.35);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: var(--gold); color: #0A0A0A; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 3px; }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ===== NAVBAR ===== */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 0;
+      background: rgba(10, 10, 10, 0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-logo img { width: 38px; height: 38px; border-radius: 10px; }
+    .nav-logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a {
+      color: var(--text-sec);
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.3s;
+      letter-spacing: 0.3px;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #0A0A0A !important;
+      padding: 10px 24px;
+      border-radius: 50px;
+      font-weight: 600 !important;
+      font-size: 13px !important;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(197, 165, 90, 0.3); }
+    .nav-mobile-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+    .nav-mobile-toggle svg { color: var(--gold); }
+
+    /* ===== HERO ===== */
+    .page-hero {
+      padding: 160px 24px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 50% 60% at 50% 0%, rgba(197,165,90,0.08) 0%, transparent 70%);
+    }
+    .page-hero-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+    .page-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .page-label::before, .page-label::after { content: ''; width: 20px; height: 1px; background: var(--gold); }
+    .page-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 5vw, 52px);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .page-title em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .page-subtitle {
+      font-size: 16px;
+      color: var(--text-sec);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+    .last-updated {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--text-ter);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 50px;
+    }
+    .last-updated svg { color: var(--gold); }
+
+    /* ===== CONTENT ===== */
+    .policy-section {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* Table of Contents */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 48px;
+    }
+    .toc h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .toc-list li a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      color: var(--text-sec);
+      font-size: 14px;
+      font-weight: 400;
+      transition: all 0.3s;
+    }
+    .toc-list li a:hover {
+      background: var(--gold-glow);
+      color: var(--gold);
+    }
+    .toc-list li a .num {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    /* Policy blocks */
+    .policy-block {
+      padding-bottom: 48px;
+      margin-bottom: 48px;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 100px;
+    }
+    .policy-block:last-child { border-bottom: none; }
+
+    .policy-block h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(22px, 3vw, 28px);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .policy-block h2 .icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--gold-glow);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .policy-block h2 .icon svg { color: var(--gold); }
+
+    .policy-block h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 24px;
+      margin-bottom: 10px;
+    }
+
+    .policy-block p {
+      font-size: 15px;
+      color: var(--text-sec);
+      line-height: 1.8;
+      font-weight: 300;
+      margin-bottom: 12px;
+    }
+
+    .policy-block ul {
+      list-style: none;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .policy-block ul li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-sec);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+    .policy-block ul li::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+      margin-top: 8px;
+    }
+
+    .highlight-box {
+      background: var(--surface);
+      border: 1px solid rgba(197,165,90,0.2);
+      border-left: 3px solid var(--gold);
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-top: 20px;
+    }
+    .highlight-box p {
+      font-size: 14px;
+      color: var(--text-sec);
+      margin: 0;
+    }
+    .highlight-box strong { color: var(--gold); font-weight: 600; }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .data-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      transition: all 0.3s;
+    }
+    .data-item:hover {
+      border-color: rgba(197,165,90,0.25);
+      transform: translateY(-2px);
+    }
+    .data-item h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .data-item p {
+      font-size: 12px;
+      color: var(--text-sec);
+      margin: 0;
+      line-height: 1.6;
+    }
+
+    .contact-card {
+      background: linear-gradient(135deg, rgba(197,165,90,0.06) 0%, var(--surface) 100%);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      margin-top: 32px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+    .contact-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .contact-card > p {
+      font-size: 14px;
+      color: var(--text-sec);
+      margin-bottom: 0;
+    }
+    .contact-method {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .contact-method .icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--gold-glow);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .contact-method .icon svg { color: var(--gold); }
+    .contact-method p { font-size: 14px; color: var(--text); font-weight: 500; margin: 0; }
+    .contact-method span { font-size: 12px; color: var(--text-sec); font-weight: 300; }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 60px 24px 30px;
+    }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    .footer-brand p { font-size: 13px; color: var(--text-sec); line-height: 1.7; font-weight: 300; max-width: 280px; margin-top: 12px; }
+    .footer-col h4 { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li { margin-bottom: 10px; }
+    .footer-col ul a { color: var(--text-sec); text-decoration: none; font-size: 13px; font-weight: 300; transition: color 0.3s; }
+    .footer-col ul a:hover { color: var(--gold); }
+    .footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 24px; flex-wrap: wrap; gap: 12px; }
+    .footer-bottom p { font-size: 12px; color: var(--text-ter); font-weight: 300; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .nav-mobile-toggle { display: flex; }
+      .data-grid { grid-template-columns: 1fr; }
+      .contact-card { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .page-hero { padding: 140px 20px 40px; }
+      .toc { padding: 24px; }
+      .contact-card { padding: 24px; }
+      .footer-top { grid-template-columns: 1fr; }
+    }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,10,0.98);
+      backdrop-filter: blur(20px);
+      z-index: 99;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { font-size: 18px; color: var(--text); text-decoration: none; font-weight: 500; transition: color 0.3s; }
+    .mobile-menu a:hover { color: var(--gold); }
+    .mobile-close { position: absolute; top: 24px; right: 24px; background: none; border: none; cursor: pointer; padding: 8px; }
+    .mobile-close svg { color: var(--gold); }
+
+    .reveal { opacity: 0; transform: translateY(20px); transition: all 0.7s cubic-bezier(0.4,0,0.2,1); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <img src="assets/icon.png" alt="Safar Go" onerror="this.style.display='none'" />
+        <span class="nav-logo-text">Safar Go</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="privacy.html" class="active">Privacy Policy</a></li>
+        <li><a href="terms.html">Terms</a></li>
+        <li><a href="index.html#download" class="nav-cta">Download App</a></li>
+      </ul>
+      <button class="nav-mobile-toggle" onclick="toggleMobile()" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="mobile-close" onclick="toggleMobile()" aria-label="Close">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms</a>
+    <a href="index.html#download" class="btn-primary" onclick="toggleMobile()">Download App</a>
+  </div>
+
+  <!-- HERO -->
+  <section class="page-hero">
+    <div class="page-hero-inner">
+      <div class="page-label">Your Privacy Matters</div>
+      <h1 class="page-title">Privacy <em>Policy</em></h1>
+      <p class="page-subtitle">This Privacy Policy describes how Safar Go collects, uses, and protects your personal information when you use our app and services.</p>
+      <div class="last-updated">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Last Updated: March 27, 2026
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTENT -->
+  <div class="policy-section">
+
+    <!-- TOC -->
+    <div class="toc reveal">
+      <h2>Contents</h2>
+      <ul class="toc-list">
+        <li><a href="#info-collection"><span class="num">1</span>Information We Collect</a></li>
+        <li><a href="#info-use"><span class="num">2</span>How We Use Your Information</a></li>
+        <li><a href="#info-sharing"><span class="num">3</span>Information Sharing & Disclosure</a></li>
+        <li><a href="#data-security"><span class="num">4</span>Data Security</a></li>
+        <li><a href="#data-retention"><span class="num">5</span>Data Retention</a></li>
+        <li><a href="#your-rights"><span class="num">6</span>Your Rights</a></li>
+        <li><a href="#cookies"><span class="num">7</span>Cookies & Tracking</a></li>
+        <li><a href="#third-party"><span class="num">8</span>Third-Party Services</a></li>
+        <li><a href="#changes"><span class="num">9</span>Policy Changes</a></li>
+        <li><a href="#contact"><span class="num">10</span>Contact Us</a></li>
+      </ul>
+    </div>
+
+    <!-- 1. Information We Collect -->
+    <div class="policy-block reveal" id="info-collection">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>Information We Collect</h2>
+      <p>We collect information you provide directly to us, as well as information collected automatically when you use the Safar Go app and services.</p>
+
+      <h3>Information You Provide</h3>
+      <ul>
+        <li><strong>Account Information:</strong> Name, phone number, email address, profile photo, and payment information when you create an account.</li>
+        <li><strong>Trip Details:</strong> Pickup and drop-off locations, travel dates, passenger count, and special requests.</li>
+        <li><strong>Driver Information:</strong> Name, phone number, vehicle details, driving license, and verification documents (for driver accounts).</li>
+        <li><strong>Communications:</strong> Messages sent through our app, support tickets, and feedback you provide.</li>
+        <li><strong>Documents:</strong> Government-issued ID proof, address proof, and any other documents required for verification.</li>
+      </ul>
+
+      <h3>Information Collected Automatically</h3>
+      <ul>
+        <li><strong>Location Data:</strong> Real-time GPS location during trips (with your permission) for tracking and safety purposes.</li>
+        <li><strong>Device Information:</strong> Device type, operating system, unique device identifiers, and app version.</li>
+        <li><strong>Usage Data:</strong> Trip history, search queries, feature usage, and interaction patterns within the app.</li>
+        <li><strong>Call & SMS Logs:</strong> For verifying communications between drivers and customers (with consent).</li>
+      </ul>
+
+      <div class="highlight-box">
+        <p><strong>Important:</strong> We only collect location data when actively using the app or during an active trip. We do not track your location continuously when the app is in the background.</p>
+      </div>
+    </div>
+
+    <!-- 2. How We Use -->
+    <div class="policy-block reveal" id="info-use">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>How We Use Your Information</h2>
+      <p>We use the information we collect for the following purposes:</p>
+      <ul>
+        <li><strong>Providing Services:</strong> To process bookings, match you with drivers, track trips, and facilitate payments.</li>
+        <li><strong>Account Management:</strong> To create and manage your account, verify your identity, and provide customer support.</li>
+        <li><strong>Safety & Security:</strong> To verify drivers, monitor for fraudulent activity, and ensure the safety of all users.</li>
+        <li><strong>Personalization:</strong> To recommend routes, save favourite destinations, and improve your experience.</li>
+        <li><strong>Communications:</strong> To send trip updates, promotional offers (with your consent), and service notifications.</li>
+        <li><strong>Analytics & Improvements:</strong> To analyse usage patterns, fix bugs, and improve our app and services.</li>
+        <li><strong>Legal Compliance:</strong> To comply with applicable laws, respond to legal requests, and protect our rights.</li>
+      </ul>
+    </div>
+
+    <!-- 3. Information Sharing -->
+    <div class="policy-block reveal" id="info-sharing">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span>Information Sharing & Disclosure</h2>
+      <p>We do not sell your personal information to third parties. We may share your information in the following circumstances:</p>
+      <ul>
+        <li><strong>With Drivers:</strong> For trip coordination, we share your name, pickup/drop location, and contact number with the assigned driver.</li>
+        <li><strong>With Customers:</strong> Drivers' names and vehicle details are shared with customers for trip identification.</li>
+        <li><strong>Service Providers:</strong> With trusted partners who help us process payments, send SMS/email, provide cloud hosting, and offer customer support.</li>
+        <li><strong>Legal Requirements:</strong> When required by law, court order, or government authority.</li>
+        <li><strong>SOS/Emergency:</strong> In genuine emergency situations, we may share location data with emergency services.</li>
+        <li><strong>Business Transfers:</strong> In the event of a merger, acquisition, or sale of assets, your data may be transferred to the new entity.</li>
+      </ul>
+    </div>
+
+    <!-- 4. Data Security -->
+    <div class="policy-block reveal" id="data-security">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>Data Security</h2>
+      <p>We take data security seriously and implement industry-standard measures to protect your information:</p>
+      <ul>
+        <li><strong>Encryption:</strong> All data transmitted between your device and our servers is encrypted using TLS/SSL.</li>
+        <li><strong>Secure Storage:</strong> Personal data is stored in secure, access-controlled data centres with encryption at rest.</li>
+        <li><strong>Access Controls:</strong> Strict access controls ensure only authorised personnel can access sensitive data.</li>
+        <li><strong>Regular Audits:</strong> We conduct regular security audits and penetration testing to identify and fix vulnerabilities.</li>
+        <li><strong>Employee Training:</strong> All employees handling user data are trained on data protection and privacy practices.</li>
+      </ul>
+      <div class="highlight-box">
+        <p>While we strive to protect your data, no method of transmission over the internet is 100% secure. We cannot guarantee absolute security, but we are committed to maintaining the highest standards.</p>
+      </div>
+    </div>
+
+    <!-- 5. Data Retention -->
+    <div class="policy-block reveal" id="data-retention">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Data Retention</h2>
+      <p>We retain your personal information only for as long as necessary to fulfil the purposes outlined in this policy:</p>
+      <div class="data-grid">
+        <div class="data-item">
+          <h4>Account Data</h4>
+          <p>Retained until account deletion + 90 days for legal compliance</p>
+        </div>
+        <div class="data-item">
+          <h4>Trip History</h4>
+          <p>Retained for 3 years for billing and dispute resolution</p>
+        </div>
+        <div class="data-item">
+          <h4>Location Data</h4>
+          <p>Retained for 30 days after trip completion, then anonymised</p>
+        </div>
+        <div class="data-item">
+          <h4>Driver Documents</h4>
+          <p>Retained while driver is active + 2 years after deactivation</p>
+        </div>
+        <div class="data-item">
+          <h4>Support Communications</h4>
+          <p>Retained for 2 years for quality and dispute purposes</p>
+        </div>
+        <div class="data-item">
+          <h4>Marketing Data</h4>
+          <p>Retained until you withdraw consent + 30 days grace period</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Your Rights -->
+    <div class="policy-block reveal" id="your-rights">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>Your Rights</h2>
+      <p>You have full control over your personal information. You can exercise the following rights at any time:</p>
+      <ul>
+        <li><strong>Access:</strong> Request a copy of all personal data we hold about you.</li>
+        <li><strong>Correction:</strong> Request correction of inaccurate or incomplete data.</li>
+        <li><strong>Deletion:</strong> Request deletion of your account and personal data (subject to legal retention requirements).</li>
+        <li><strong>Portability:</strong> Request your data in a machine-readable format.</li>
+        <li><strong>Withdraw Consent:</strong> Withdraw consent for marketing communications at any time.</li>
+        <li><strong>Object:</strong> Object to certain types of processing, such as direct marketing.</li>
+        <li><strong>Restriction:</strong> Request restriction of processing in certain circumstances.</li>
+      </ul>
+      <p>To exercise any of these rights, contact us at <strong style="color:var(--gold)">privacy@safargo.com</strong>. We will respond within 30 days.</p>
+    </div>
+
+    <!-- 7. Cookies -->
+    <div class="policy-block reveal" id="cookies">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="8" cy="10" r="1" fill="currentColor"/><circle cx="16" cy="10" r="1" fill="currentColor"/><circle cx="12" cy="16" r="1" fill="currentColor"/></svg></span>Cookies & Tracking</h2>
+      <p>We use cookies and similar technologies to enhance your experience:</p>
+      <ul>
+        <li><strong>Essential Cookies:</strong> Required for the app to function — login sessions, security, and core features.</li>
+        <li><strong>Analytics Cookies:</strong> Help us understand how users interact with our app so we can improve it.</li>
+        <li><strong>Preference Cookies:</strong> Remember your settings and preferences for a better experience.</li>
+        <li><strong>Marketing Cookies:</strong> Used (with consent) to show relevant ads and track campaign effectiveness.</li>
+      </ul>
+      <p>You can manage or disable cookies through your browser settings. Note that disabling essential cookies may affect app functionality.</p>
+    </div>
+
+    <!-- 8. Third-Party -->
+    <div class="policy-block reveal" id="third-party">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></span>Third-Party Services</h2>
+      <p>Our app may link to or integrate third-party services. We are not responsible for the privacy practices of these third parties:</p>
+      <ul>
+        <li><strong>Map Services:</strong> Ola Maps is used for navigation and route planning. Their privacy policy governs their data practices.</li>
+        <li><strong>Payment Gateways:</strong> Payment processors (Razorpay, UPI) handle payment data. Review their privacy policies.</li>
+        <li><strong>Analytics:</strong> We may use analytics tools to understand app usage patterns.</li>
+        <li><strong>Social Media:</strong> Links to social media platforms are governed by their respective privacy policies.</li>
+      </ul>
+      <p>We encourage you to review the privacy policies of any third-party services you interact with.</p>
+    </div>
+
+    <!-- 9. Policy Changes -->
+    <div class="policy-block reveal" id="changes">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>Policy Changes</h2>
+      <p>We may update this Privacy Policy from time to time to reflect changes in our practices, technology, or legal requirements. When we make material changes:</p>
+      <ul>
+        <li>We will notify you via in-app notification and/or email at least 30 days before the changes take effect.</li>
+        <li>We will update the "Last Updated" date at the top of this page.</li>
+        <li>For significant changes, we will obtain your explicit consent where required by law.</li>
+      </ul>
+      <p>Your continued use of the Safar Go app after any changes indicates your acceptance of the updated policy.</p>
+    </div>
+
+    <!-- 10. Contact -->
+    <div class="policy-block reveal" id="contact">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>Contact Us</h2>
+      <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our data practices, please reach out to us:</p>
+
+      <div class="contact-card">
+        <div>
+          <h3>Data Protection Officer</h3>
+          <p>For privacy-related queries and data subject requests</p>
+          <div class="contact-method">
+            <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <div>
+              <p>privacy@safargo.com</p>
+              <span>Response within 30 days</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3>Customer Support</h3>
+          <p>For general support and service queries</p>
+          <div class="contact-method">
+            <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <div>
+              <p>+91 98765 43210</p>
+              <span>Available 24/7</span>
+            </div>
+          </div>
+          <div class="contact-method">
+            <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+            <div>
+              <p>WhatsApp Support</p>
+              <span>Instant response</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="index.html" class="nav-logo">
+            <span class="nav-logo-text">Safar Go</span>
+          </a>
+          <p>Lucknow's premier outstation taxi service. Verified drivers, luxury fleet, and 24/7 availability for your most important journeys.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="about.html">About Us</a></li>
+            <li><a href="index.html#routes">Destinations</a></li>
+            <li><a href="index.html#driver">Drive with Us</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="index.html#how-it-works">How It Works</a></li>
+            <li><a href="index.html#features">Features</a></li>
+            <li><a href="tel:+919876543210">Call Us</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="index.html#download">Download App</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Safar Go. All rights reserved. Made with ❤️ in Lucknow, India.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function toggleMobile() {
+      document.getElementById('mobileMenu').classList.toggle('open');
+      document.body.style.overflow = document.getElementById('mobileMenu').classList.contains('open') ? 'hidden' : '';
+    }
+    document.querySelectorAll('.toc-list a').forEach(link => {
+      link.addEventListener('click', function(e) {
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.05 });
+    reveals.forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>

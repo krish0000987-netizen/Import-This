@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About Us — Safar Go | Lucknow's Premium Taxi Service</title>
+  <meta name="description" content="Learn about Safar Go — Lucknow's premier outstation taxi service. Our mission, story, and commitment to premium travel experiences across India." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #C5A55A;
+      --gold-light: #D4BA7A;
+      --gold-dark: #A88B3D;
+      --gold-glow: rgba(197, 165, 90, 0.12);
+      --bg: #0A0A0A;
+      --surface: #141410;
+      --surface-2: #1E1E1A;
+      --border: rgba(197, 165, 90, 0.12);
+      --text: #F5F5F5;
+      --text-sec: rgba(245, 245, 245, 0.6);
+      --text-ter: rgba(245, 245, 245, 0.35);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: var(--gold); color: #0A0A0A; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 3px; }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ===== NAVBAR ===== */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 0;
+      background: rgba(10, 10, 10, 0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      transition: padding 0.4s;
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .nav-logo img {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+    }
+    .nav-logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      list-style: none;
+    }
+    .nav-links a {
+      color: var(--text-sec);
+      font-size: 14px;
+      font-weight: 500;
+      transition: color 0.3s;
+      letter-spacing: 0.3px;
+    }
+    .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #0A0A0A !important;
+      padding: 10px 24px;
+      border-radius: 50px;
+      font-weight: 600 !important;
+      font-size: 13px !important;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(197, 165, 90, 0.3); }
+    .nav-mobile-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+    .nav-mobile-toggle svg { color: var(--gold); }
+
+    /* ===== HERO ===== */
+    .page-hero {
+      padding: 160px 24px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 50% 60% at 50% 0%, rgba(197,165,90,0.08) 0%, transparent 70%);
+    }
+    .page-hero-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+    .page-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .page-label::before, .page-label::after {
+      content: '';
+      width: 20px;
+      height: 1px;
+      background: var(--gold);
+    }
+    .page-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .page-title em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .page-subtitle {
+      font-size: 17px;
+      color: var(--text-sec);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    /* ===== SECTIONS ===== */
+    .section { padding: 80px 24px; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .split.reverse { direction: rtl; }
+    .split.reverse > * { direction: ltr; }
+
+    .section-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 3.5vw, 40px);
+      font-weight: 700;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .section-heading em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .section-text {
+      font-size: 15px;
+      color: var(--text-sec);
+      line-height: 1.8;
+      font-weight: 300;
+    }
+    .section-text + .section-text { margin-top: 16px; }
+
+    .gold-line {
+      width: 48px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--gold-light));
+      border-radius: 1px;
+      margin-bottom: 24px;
+    }
+
+    /* Image card */
+    .img-card {
+      border-radius: 24px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      position: relative;
+    }
+    .img-card img {
+      width: 100%;
+      height: 360px;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.6s;
+    }
+    .img-card:hover img { transform: scale(1.04); }
+    .img-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      box-shadow: inset 0 0 0 1px rgba(197,165,90,0.15);
+      pointer-events: none;
+    }
+
+    /* Stats */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-top: 60px;
+    }
+    .stat-card {
+      text-align: center;
+      padding: 32px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      transition: all 0.4s;
+    }
+    .stat-card:hover {
+      border-color: rgba(197,165,90,0.3);
+      transform: translateY(-4px);
+    }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 40px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-sec);
+      font-weight: 400;
+    }
+
+    /* Values */
+    .values-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 60px;
+    }
+    .value-card {
+      padding: 40px 28px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      text-align: center;
+      transition: all 0.4s;
+      position: relative;
+      overflow: hidden;
+    }
+    .value-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    .value-card:hover { transform: translateY(-6px); border-color: rgba(197,165,90,0.25); }
+    .value-card:hover::before { opacity: 1; }
+    .value-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: var(--gold-glow);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+    .value-icon svg { color: var(--gold); }
+    .value-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .value-card p {
+      font-size: 13px;
+      color: var(--text-sec);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+
+    /* Team */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      margin-top: 60px;
+    }
+    .team-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px 28px;
+      text-align: center;
+      transition: all 0.4s;
+    }
+    .team-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(197,165,90,0.25);
+    }
+    .team-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 700;
+      color: #0A0A0A;
+    }
+    .team-card h3 { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+    .team-role { font-size: 13px; color: var(--gold); font-weight: 500; margin-bottom: 12px; }
+    .team-card p { font-size: 13px; color: var(--text-sec); line-height: 1.7; font-weight: 300; }
+
+    /* CTA */
+    .cta-section {
+      padding: 100px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 50% 60% at 50% 50%, rgba(197,165,90,0.08) 0%, transparent 70%);
+    }
+    .cta-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .cta-inner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+    .cta-inner h2 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .cta-inner p {
+      font-size: 15px;
+      color: var(--text-sec);
+      line-height: 1.7;
+      margin-bottom: 32px;
+      font-weight: 300;
+    }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #0A0A0A;
+      padding: 16px 36px;
+      border-radius: 60px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(197, 165, 90, 0.35);
+    }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 60px 24px 30px;
+    }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    .footer-brand p {
+      font-size: 13px;
+      color: var(--text-sec);
+      line-height: 1.7;
+      font-weight: 300;
+      max-width: 280px;
+      margin-top: 12px;
+    }
+    .footer-col h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 16px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li { margin-bottom: 10px; }
+    .footer-col ul a {
+      color: var(--text-sec);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 300;
+      transition: color 0.3s;
+    }
+    .footer-col ul a:hover { color: var(--gold); }
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 24px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-bottom p { font-size: 12px; color: var(--text-ter); font-weight: 300; }
+
+    /* Reveal */
+    .reveal { opacity: 0; transform: translateY(30px); transition: all 0.8s cubic-bezier(0.4,0,0.2,1); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-delay-1 { transition-delay: 0.1s; }
+    .reveal-delay-2 { transition-delay: 0.2s; }
+    .reveal-delay-3 { transition-delay: 0.3s; }
+
+    @media (max-width: 900px) {
+      .split { grid-template-columns: 1fr; gap: 40px; }
+      .split.reverse { direction: ltr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .values-grid { grid-template-columns: 1fr 1fr; }
+      .team-grid { grid-template-columns: 1fr 1fr; }
+      .footer-top { grid-template-columns: 1fr 1fr; }
+      .nav-links { display: none; }
+      .nav-mobile-toggle { display: flex; }
+    }
+    @media (max-width: 600px) {
+      .page-hero { padding: 140px 20px 60px; }
+      .section { padding: 60px 20px; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .values-grid { grid-template-columns: 1fr; }
+      .team-grid { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr; }
+    }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,10,0.98);
+      backdrop-filter: blur(20px);
+      z-index: 99;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a {
+      font-size: 18px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+    .mobile-menu a:hover { color: var(--gold); }
+    .mobile-close {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+    }
+    .mobile-close svg { color: var(--gold); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <img src="assets/icon.png" alt="Safar Go" onerror="this.style.display='none'" />
+        <span class="nav-logo-text">Safar Go</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html" class="active">About</a></li>
+        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="terms.html">Terms</a></li>
+        <li><a href="#contact" class="nav-cta">Contact Us</a></li>
+      </ul>
+      <button class="nav-mobile-toggle" onclick="toggleMobile()" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="mobile-close" onclick="toggleMobile()" aria-label="Close">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms</a>
+    <a href="#contact" class="btn-primary" onclick="toggleMobile()">Contact Us</a>
+  </div>
+
+  <!-- HERO -->
+  <section class="page-hero">
+    <div class="page-hero-inner">
+      <div class="page-label">Our Story</div>
+      <h1 class="page-title">Redefining <em>Premium</em><br />Travel in India</h1>
+      <p class="page-subtitle">From Lucknow to the world — we built Safar Go to make every journey feel like a five-star experience. Here's how it all started and where we're going.</p>
+    </div>
+  </section>
+
+  <!-- OUR STORY -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="split reveal">
+        <div>
+          <div class="gold-line"></div>
+          <h2 class="section-heading">Born from a<br /><em>Simple Frustration</em></h2>
+          <p class="section-text">Safar Go started with a simple question: why is it so hard to find a reliable, comfortable, and premium outstation taxi in Lucknow? After too many unreliable rides and uncomfortable journeys, we decided to build the solution ourselves.</p>
+          <p class="section-text">Founded in 2024, Safar Go was created with one mission — to bring luxury travel within everyone's reach. From our very first booking to thousands of happy customers later, that mission hasn't changed.</p>
+          <p class="section-text">We operate from Lucknow, serving routes across Uttar Pradesh and beyond — from the sacred ghats of Varanasi to the Taj Mahal in Agra, from spiritual Ayodhya to historic Prayagraj.</p>
+        </div>
+        <div class="img-card">
+          <img src="assets/images/destinations/lucknow.jpg" alt="Lucknow" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <section class="section" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+    <div class="section-inner">
+      <div class="reveal" style="text-align:center;">
+        <div class="page-label" style="justify-content:center;">By the Numbers</div>
+        <h2 class="section-heading" style="max-width:500px; margin:0 auto;">Growth That<br /><em>Tells Our Story</em></h2>
+      </div>
+      <div class="stats-row reveal">
+        <div class="stat-card">
+          <div class="stat-num">5,000+</div>
+          <div class="stat-label">Happy Customers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">50+</div>
+          <div class="stat-label">Premium Vehicles</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">200+</div>
+          <div class="stat-label">Verified Drivers</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num">15+</div>
+          <div class="stat-label">Popular Routes</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VALUES -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="reveal" style="text-align:center;">
+        <div class="page-label" style="justify-content:center;">What We Stand For</div>
+        <h2 class="section-heading">Our Core <em>Values</em></h2>
+        <p class="section-text" style="margin:12px auto 0; max-width:520px;">Every decision we make is guided by these principles. They shape how we operate, how we treat our customers, and how we build our team.</p>
+      </div>
+      <div class="values-grid">
+        <div class="value-card reveal reveal-delay-1">
+          <div class="value-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <h3>Safety First</h3>
+          <p>Every driver is background-verified, every vehicle is regularly inspected, and every ride is tracked in real-time for your complete peace of mind.</p>
+        </div>
+        <div class="value-card reveal reveal-delay-2">
+          <div class="value-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </div>
+          <h3>Customer Love</h3>
+          <p>We obsess over every detail of your experience — from the moment you open the app to the moment you reach your destination and beyond.</p>
+        </div>
+        <div class="value-card reveal reveal-delay-3">
+          <div class="value-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3>Always Reliable</h3>
+          <p>Punctuality isn't just a promise — it's our culture. Your driver arrives on time, every time. If we say 8 AM, we mean 8 AM.</p>
+        </div>
+        <div class="value-card reveal reveal-delay-1">
+          <div class="value-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+          </div>
+          <h3>Radical Transparency</h3>
+          <p>No hidden charges. No surge pricing tricks. No surprises. What you see is what you pay — we believe in honest, upfront pricing.</p>
+        </div>
+        <div class="value-card reveal reveal-delay-2">
+          <div class="value-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </div>
+          <h3>Driver Partnership</h3>
+          <p>Our drivers aren't just partners — they're part of the Safar Go family. We invest in their growth, their earnings, and their wellbeing.</p>
+        </div>
+        <div class="value-card reveal reveal-delay-3">
+          <div class="value-icon">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <h3>Premium Always</h3>
+          <p>Luxury isn't just about the car — it's about the whole experience. From booking to destination, every touchpoint reflects our commitment to quality.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LEADERSHIP -->
+  <section class="section" style="background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);">
+    <div class="section-inner">
+      <div class="reveal" style="text-align:center;">
+        <div class="page-label" style="justify-content:center;">The Team</div>
+        <h2 class="section-heading">Meet the <em>Founders</em></h2>
+        <p class="section-text" style="max-width:500px; margin:12px auto 0;">The people behind Safar Go — passionate entrepreneurs committed to transforming how India travels.</p>
+      </div>
+      <div class="team-grid">
+        <div class="team-card reveal reveal-delay-1">
+          <div class="team-avatar">K</div>
+          <h3>Krish Agarwal</h3>
+          <div class="team-role">Founder & CEO</div>
+          <p>A visionary entrepreneur from Lucknow with deep roots in the travel and transportation industry. Krish leads Safar Go with a passion for exceptional customer experiences.</p>
+        </div>
+        <div class="team-card reveal reveal-delay-2">
+          <div class="team-avatar">S</div>
+          <h3>Saurabh</h3>
+          <div class="team-role">Co-Founder & CTO</div>
+          <p>The tech mind behind Safar Go. Saurabh leads our technology and product teams, ensuring every feature is built to perfection and every ride is seamless.</p>
+        </div>
+        <div class="team-card reveal reveal-delay-3">
+          <div class="team-avatar">T</div>
+          <h3>Team Safar Go</h3>
+          <div class="team-role">Operations & Support</div>
+          <p>Our dedicated operations team ensures every ride runs smoothly, every driver is supported, and every customer query is resolved promptly — 24 hours a day, 7 days a week.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section" id="contact">
+    <div class="cta-inner reveal">
+      <h2>Have Questions?<br /><em>Let's Talk.</em></h2>
+      <p>Whether you're a customer, driver, or partner — we'd love to hear from you. Reach out and our team will get back to you within 24 hours.</p>
+      <a href="mailto:support@safargo.com" class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Get in Touch
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="index.html" class="nav-logo">
+            <span class="nav-logo-text">Safar Go</span>
+          </a>
+          <p>Lucknow's premier outstation taxi service. Verified drivers, luxury fleet, and 24/7 availability for your most important journeys.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="about.html">About Us</a></li>
+            <li><a href="index.html#routes">Destinations</a></li>
+            <li><a href="index.html#driver">Drive with Us</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="index.html#how-it-works">How It Works</a></li>
+            <li><a href="index.html#features">Features</a></li>
+            <li><a href="index.html#reviews">Reviews</a></li>
+            <li><a href="tel:+919876543210">Call Us</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="index.html#download">Download App</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Safar Go. All rights reserved. Made with ❤️ in Lucknow, India.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function toggleMobile() {
+      document.getElementById('mobileMenu').classList.toggle('open');
+      document.body.style.overflow = document.getElementById('mobileMenu').classList.contains('open') ? 'hidden' : '';
+    }
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.1 });
+    reveals.forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>

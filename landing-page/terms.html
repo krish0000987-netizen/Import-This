@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Terms of Service — Safar Go | Booking Terms & Conditions</title>
+  <meta name="description" content="Read the complete Terms of Service for Safar Go. Understand our booking terms, cancellation policy, driver requirements, and user obligations." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --gold: #C5A55A;
+      --gold-light: #D4BA7A;
+      --gold-dark: #A88B3D;
+      --gold-glow: rgba(197, 165, 90, 0.12);
+      --bg: #0A0A0A;
+      --surface: #141410;
+      --surface-2: #1E1E1A;
+      --border: rgba(197, 165, 90, 0.12);
+      --text: #F5F5F5;
+      --text-sec: rgba(245, 245, 245, 0.6);
+      --text-ter: rgba(245, 245, 245, 0.35);
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: var(--gold); color: #0A0A0A; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 3px; }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* ===== NAVBAR ===== */
+    .navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      padding: 20px 0;
+      background: rgba(10, 10, 10, 0.92);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo { display: flex; align-items: center; gap: 10px; }
+    .nav-logo img { width: 38px; height: 38px; border-radius: 10px; }
+    .nav-logo-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--gold);
+      letter-spacing: 1px;
+    }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { color: var(--text-sec); font-size: 14px; font-weight: 500; transition: color 0.3s; letter-spacing: 0.3px; }
+    .nav-links a:hover, .nav-links a.active { color: var(--gold); }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #0A0A0A !important;
+      padding: 10px 24px;
+      border-radius: 50px;
+      font-weight: 600 !important;
+      font-size: 13px !important;
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .nav-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(197, 165, 90, 0.3); }
+    .nav-mobile-toggle { display: none; background: none; border: none; cursor: pointer; padding: 8px; }
+    .nav-mobile-toggle svg { color: var(--gold); }
+
+    /* ===== HERO ===== */
+    .page-hero {
+      padding: 160px 24px 60px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .page-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 50% 60% at 50% 0%, rgba(197,165,90,0.08) 0%, transparent 70%);
+    }
+    .page-hero-inner { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; }
+    .page-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .page-label::before, .page-label::after { content: ''; width: 20px; height: 1px; background: var(--gold); }
+    .page-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(36px, 5vw, 52px);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+    .page-title em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .page-subtitle { font-size: 16px; color: var(--text-sec); line-height: 1.7; font-weight: 300; }
+    .last-updated {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--text-ter);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 50px;
+    }
+    .last-updated svg { color: var(--gold); }
+
+    /* ===== CONTENT ===== */
+    .terms-section {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* TOC */
+    .toc {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      margin-bottom: 48px;
+    }
+    .toc h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .toc-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+    .toc-list li a {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      color: var(--text-sec);
+      font-size: 14px;
+      font-weight: 400;
+      transition: all 0.3s;
+    }
+    .toc-list li a:hover { background: var(--gold-glow); color: var(--gold); }
+    .toc-list li a .num {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      flex-shrink: 0;
+    }
+
+    /* Term blocks */
+    .term-block {
+      padding-bottom: 48px;
+      margin-bottom: 48px;
+      border-bottom: 1px solid var(--border);
+      scroll-margin-top: 100px;
+    }
+    .term-block:last-child { border-bottom: none; }
+
+    .term-block h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(20px, 3vw, 26px);
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .term-block h2 .icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--gold-glow);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .term-block h2 .icon svg { color: var(--gold); }
+
+    .term-block h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 24px;
+      margin-bottom: 10px;
+    }
+
+    .term-block p {
+      font-size: 15px;
+      color: var(--text-sec);
+      line-height: 1.8;
+      font-weight: 300;
+      margin-bottom: 12px;
+    }
+
+    .term-block ul, .term-block ol {
+      margin-top: 12px;
+      margin-bottom: 12px;
+      padding-left: 0;
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .term-block ul li, .term-block ol li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 14px;
+      color: var(--text-sec);
+      line-height: 1.7;
+      font-weight: 300;
+    }
+    .term-block ul li::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--gold);
+      flex-shrink: 0;
+      margin-top: 8px;
+    }
+    .term-block ol {
+      counter-reset: terms;
+    }
+    .term-block ol li {
+      counter-increment: terms;
+      align-items: flex-start;
+    }
+    .term-block ol li::before {
+      content: counter(terms);
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--gold-glow);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--gold);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    /* Info cards */
+    .info-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-top: 20px;
+    }
+    .info-card h4 {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--gold);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .info-card h4 svg { color: var(--gold); }
+    .info-card p { font-size: 13px; color: var(--text-sec); line-height: 1.7; font-weight: 300; margin-bottom: 8px; }
+    .info-card:last-child { margin-bottom: 0; }
+
+    /* Pricing table */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .pricing-item {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.3s;
+    }
+    .pricing-item:hover {
+      border-color: rgba(197,165,90,0.25);
+      transform: translateY(-2px);
+    }
+    .pricing-item .left h4 { font-size: 14px; font-weight: 600; color: var(--text); }
+    .pricing-item .left p { font-size: 12px; color: var(--text-sec); margin: 0; font-weight: 300; }
+    .pricing-item .price {
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    /* Alert */
+    .alert-box {
+      background: rgba(231, 76, 60, 0.08);
+      border: 1px solid rgba(231, 76, 60, 0.2);
+      border-left: 3px solid #E74C3C;
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .alert-box svg { color: #E74C3C; flex-shrink: 0; margin-top: 2px; }
+    .alert-box p { font-size: 13px; color: var(--text-sec); line-height: 1.6; font-weight: 300; margin: 0; }
+
+    .warning-box {
+      background: rgba(197, 165, 90, 0.06);
+      border: 1px solid rgba(197,165,90,0.2);
+      border-left: 3px solid var(--gold);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .warning-box svg { color: var(--gold); flex-shrink: 0; margin-top: 2px; }
+    .warning-box p { font-size: 13px; color: var(--text-sec); line-height: 1.6; font-weight: 300; margin: 0; }
+
+    /* CTA */
+    .section-cta {
+      padding: 80px 24px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .section-cta::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 50% 60% at 50% 50%, rgba(197,165,90,0.06) 0%, transparent 70%);
+    }
+    .section-cta-inner {
+      position: relative;
+      z-index: 1;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .section-cta-inner h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(26px, 4vw, 40px);
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    .section-cta-inner h2 em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--gold), var(--gold-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .section-cta-inner p { font-size: 15px; color: var(--text-sec); line-height: 1.7; margin-bottom: 32px; font-weight: 300; }
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+      color: #0A0A0A;
+      padding: 16px 36px;
+      border-radius: 60px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 40px rgba(197, 165, 90, 0.35); }
+
+    /* ===== FOOTER ===== */
+    .footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 60px 24px 30px;
+    }
+    .footer-inner { max-width: 1200px; margin: 0 auto; }
+    .footer-top {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 40px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    .footer-brand p { font-size: 13px; color: var(--text-sec); line-height: 1.7; font-weight: 300; max-width: 280px; margin-top: 12px; }
+    .footer-col h4 { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 16px; letter-spacing: 1px; text-transform: uppercase; }
+    .footer-col ul { list-style: none; }
+    .footer-col ul li { margin-bottom: 10px; }
+    .footer-col ul a { color: var(--text-sec); text-decoration: none; font-size: 13px; font-weight: 300; transition: color 0.3s; }
+    .footer-col ul a:hover { color: var(--gold); }
+    .footer-bottom { display: flex; align-items: center; justify-content: space-between; padding-top: 24px; flex-wrap: wrap; gap: 12px; }
+    .footer-bottom p { font-size: 12px; color: var(--text-ter); font-weight: 300; }
+
+    @media (max-width: 900px) {
+      .nav-links { display: none; }
+      .nav-mobile-toggle { display: flex; }
+      .pricing-grid { grid-template-columns: 1fr; }
+      .footer-top { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 600px) {
+      .page-hero { padding: 140px 20px 40px; }
+      .toc { padding: 24px; }
+      .footer-top { grid-template-columns: 1fr; }
+    }
+
+    .mobile-menu {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,10,0.98);
+      backdrop-filter: blur(20px);
+      z-index: 99;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+    }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { font-size: 18px; color: var(--text); text-decoration: none; font-weight: 500; transition: color 0.3s; }
+    .mobile-menu a:hover { color: var(--gold); }
+    .mobile-close { position: absolute; top: 24px; right: 24px; background: none; border: none; cursor: pointer; padding: 8px; }
+    .mobile-close svg { color: var(--gold); }
+
+    .reveal { opacity: 0; transform: translateY(20px); transition: all 0.7s cubic-bezier(0.4,0,0.2,1); }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <nav class="navbar">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <img src="assets/icon.png" alt="Safar Go" onerror="this.style.display='none'" />
+        <span class="nav-logo-text">Safar Go</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="about.html">About</a></li>
+        <li><a href="privacy.html">Privacy Policy</a></li>
+        <li><a href="terms.html" class="active">Terms</a></li>
+        <li><a href="index.html#download" class="nav-cta">Download App</a></li>
+      </ul>
+      <button class="nav-mobile-toggle" onclick="toggleMobile()" aria-label="Menu">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <button class="mobile-close" onclick="toggleMobile()" aria-label="Close">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="terms.html">Terms</a>
+    <a href="index.html#download" class="btn-primary" onclick="toggleMobile()">Download App</a>
+  </div>
+
+  <!-- HERO -->
+  <section class="page-hero">
+    <div class="page-hero-inner">
+      <div class="page-label">Legal</div>
+      <h1 class="page-title">Terms of <em>Service</em></h1>
+      <p class="page-subtitle">By using Safar Go, you agree to these terms. Please read them carefully before using our services. These terms govern your relationship with Safar Go.</p>
+      <div class="last-updated">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Last Updated: March 27, 2026
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTENT -->
+  <div class="terms-section">
+
+    <!-- TOC -->
+    <div class="toc reveal">
+      <h2>Contents</h2>
+      <ul class="toc-list">
+        <li><a href="#acceptance"><span class="num">1</span>Acceptance of Terms</a></li>
+        <li><a href="#services"><span class="num">2</span>Our Services</a></li>
+        <li><a href="#account"><span class="num">3</span>User Accounts</a></li>
+        <li><a href="#booking"><span class="num">4</span>Booking & Reservations</a></li>
+        <li><a href="#pricing"><span class="num">5</span>Pricing & Payments</a></li>
+        <li><a href="#cancellation"><span class="num">6</span>Cancellation Policy</a></li>
+        <li><a href="#conduct"><span class="num">7</span>User Conduct</a></li>
+        <li><a href="#driver-terms"><span class="num">8</span>Driver Terms</a></li>
+        <li><a href="#liability"><span class="num">9</span>Limitation of Liability</a></li>
+        <li><a href="#intellectual"><span class="num">10</span>Intellectual Property</a></li>
+        <li><a href="#modifications"><span class="num">11</span>Modifications to Terms</a></li>
+        <li><a href="#governing"><span class="num">12</span>Governing Law</a></li>
+        <li><a href="#contact"><span class="num">13</span>Contact</a></li>
+      </ul>
+    </div>
+
+    <!-- 1. Acceptance -->
+    <div class="term-block reveal" id="acceptance">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></span>Acceptance of Terms</h2>
+      <p>Welcome to Safar Go. By accessing or using our mobile application, website, or any of our services, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, you may not use our services.</p>
+      <p>These Terms constitute a legally binding agreement between you ("User", "you", or "your") and Safar Go ("Safar Go", "we", "us", or "our") governing your use of our outstation taxi booking platform and related services.</p>
+      <p>By creating an account, making a booking, or using any part of our service, you confirm that:</p>
+      <ul>
+        <li>You are at least 18 years of age and have the legal capacity to enter into contracts.</li>
+        <li>All information provided by you during registration is true, accurate, and complete.</li>
+        <li>You will comply with these Terms and all applicable laws and regulations.</li>
+        <li>You accept electronic communications and agree that all agreements and notices satisfy any legal requirement for written form.</li>
+      </ul>
+    </div>
+
+    <!-- 2. Services -->
+    <div class="term-block reveal" id="services">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>Our Services</h2>
+      <p>Safar Go provides an online platform that connects passengers with verified drivers for outstation taxi services. Our services include:</p>
+      <ul>
+        <li><strong>Outstation Cab Booking:</strong> One-way and round-trip taxi bookings from Lucknow to destinations across Uttar Pradesh and beyond.</li>
+        <li><strong>Route Coverage:</strong> Pre-defined popular routes including Varanasi, Ayodhya, Agra, Mathura, Prayagraj, and more.</li>
+        <li><strong>Multiple Vehicle Types:</strong> Sedans, SUVs, and premium vehicles to suit different group sizes and preferences.</li>
+        <li><strong>Real-Time Tracking:</strong> Live GPS tracking of booked trips for safety and transparency.</li>
+        <li><strong>Driver Partner Services:</strong> For drivers, we provide an app to receive trip requests and manage earnings.</li>
+      </ul>
+      <p>Safar Go acts as an intermediary between customers and independent driver-partners. We do not own vehicles or employ drivers directly. The transportation service itself is provided by the driver-partner.</p>
+    </div>
+
+    <!-- 3. User Accounts -->
+    <div class="term-block reveal" id="account">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>User Accounts</h2>
+      <p>To access certain features of Safar Go, you must create an account. During registration, you may be required to provide:</p>
+      <ul>
+        <li>Full name and phone number (mandatory)</li>
+        <li>Email address</li>
+        <li>Profile photograph</li>
+        <li>Payment information</li>
+      </ul>
+      <p>You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You agree to:</p>
+      <ul>
+        <li>Not share your account credentials with any third party.</li>
+        <li>Notify us immediately of any unauthorized use of your account.</li>
+        <li>Ensure that you log out at the end of each session.</li>
+        <li>Provide accurate and up-to-date information at all times.</li>
+      </ul>
+      <div class="alert-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p><strong>Important:</strong> You are solely responsible for all activities conducted through your account. Safar Go shall not be liable for any loss or damage arising from unauthorized use of your credentials.</p>
+      </div>
+      <p>We reserve the right to suspend or terminate accounts that violate these Terms or are used for fraudulent, abusive, or illegal purposes.</p>
+    </div>
+
+    <!-- 4. Booking -->
+    <div class="term-block reveal" id="booking">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>Booking & Reservations</h2>
+      <p>When you make a booking through Safar Go, the following terms apply:</p>
+
+      <h3>Booking Process</h3>
+      <ol>
+        <li>Select your pickup location, destination, and travel date.</li>
+        <li>Choose your preferred vehicle type from available options.</li>
+        <li>Review the fare estimate and confirm booking details.</li>
+        <li>Make payment through your preferred method.</li>
+        <li>Receive driver and vehicle details via app notification.</li>
+      </ol>
+
+      <h3>Booking Confirmation</h3>
+      <p>A booking is confirmed only upon receipt of payment confirmation. You will receive an in-app notification and SMS with driver details, including name, vehicle number, and estimated arrival time.</p>
+
+      <h3>Advance Booking</h3>
+      <p>You can book trips up to 30 days in advance. All advance bookings are subject to driver availability at the time of dispatch.</p>
+
+      <h3>Trip Modifications</h3>
+      <p>If you need to modify a booking (change date, time, or route), please contact our support team at least 6 hours before the scheduled pickup time. Modifications are subject to availability and may result in fare adjustments.</p>
+    </div>
+
+    <!-- 5. Pricing -->
+    <div class="term-block reveal" id="pricing">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>Pricing & Payments</h2>
+      <p>Our pricing is transparent and upfront. The fare shown at the time of booking is the final fare, subject to the conditions below:</p>
+
+      <h3>What's Included in the Fare</h3>
+      <ul>
+        <li>Base fare for the selected route</li>
+        <li>Driver allowance and fuel charges</li>
+        <li>Toll charges (for standard toll routes)</li>
+        <li>State tax and applicable GST</li>
+      </ul>
+
+      <h3>Additional Charges (Where Applicable)</h3>
+      <div class="pricing-grid">
+        <div class="pricing-item">
+          <div class="left">
+            <h4>Night Charges</h4>
+            <p>10:00 PM - 6:00 AM</p>
+          </div>
+          <div class="price">+₹100</div>
+        </div>
+        <div class="pricing-item">
+          <div class="left">
+            <h4>Extra Distance</h4>
+            <p>Beyond route km</p>
+          </div>
+          <div class="price">₹10/km</div>
+        </div>
+        <div class="pricing-item">
+          <div class="left">
+            <h4>Waiting Charges</h4>
+            <p>After 30 min grace</p>
+          </div>
+          <div class="price">₹2/min</div>
+        </div>
+        <div class="pricing-item">
+          <div class="left">
+            <h4>State Entry Tax</h4>
+            <p>Where applicable</p>
+          </div>
+          <div class="price">Varies</div>
+        </div>
+      </div>
+
+      <h3>Payment Methods</h3>
+      <p>We accept the following payment methods:</p>
+      <ul>
+        <li>UPI (Google Pay, PhonePe, Paytm, BHIM)</li>
+        <li>Credit/Debit Cards (Visa, Mastercard, RuPay)</li>
+        <li>Net Banking</li>
+        <li>Cash payment to driver</li>
+        <li>Safar Go Wallet (in-app balance)</li>
+      </ul>
+
+      <div class="warning-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <p><strong>Note:</strong> Surge pricing does not apply on Safar Go. The fare shown at booking time is the fare you pay. We believe in transparent, predictable pricing.</p>
+      </div>
+    </div>
+
+    <!-- 6. Cancellation -->
+    <div class="term-block reveal" id="cancellation">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></span>Cancellation Policy</h2>
+      <p>We understand that plans can change. Our cancellation policy is designed to be fair to both customers and drivers:</p>
+
+      <div class="info-card">
+        <h4>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Free Cancellation
+        </h4>
+        <p>Cancelled more than 6 hours before scheduled pickup: <strong style="color:var(--text)">Full refund</strong> — 100% of the fare is refunded to your original payment method within 5-7 business days.</p>
+      </div>
+      <div class="info-card">
+        <h4>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          Partial Refund
+        </h4>
+        <p>Cancelled between 2-6 hours before pickup: <strong style="color:var(--text)">50% refund</strong> — Half the fare is refunded. The remaining 50% goes to the driver as compensation for their time.</p>
+      </div>
+      <div class="info-card">
+        <h4>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          No Refund
+        </h4>
+        <p>Cancelled less than 2 hours before pickup, or if the driver has already arrived: <strong style="color:var(--text)">No refund</strong>. The full fare is transferred to the driver.</p>
+      </div>
+
+      <h3>Driver No-Show</h3>
+      <p>If your driver does not arrive within 30 minutes of the scheduled time, please contact our support immediately. If we cannot arrange an alternate driver, you will receive a <strong style="color:var(--gold)">full refund</strong> within 48 hours.</p>
+
+      <h3>Trip Interruption</h3>
+      <p>If a trip is interrupted mid-way due to driver-related issues (vehicle breakdown, driver emergency), you will not be charged for the uncompleted portion. Contact support for immediate assistance and refund processing.</p>
+    </div>
+
+    <!-- 7. User Conduct -->
+    <div class="term-block reveal" id="conduct">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>User Conduct</h2>
+      <p>By using Safar Go, you agree to behave responsibly and respectfully. The following conduct is strictly prohibited:</p>
+      <ul>
+        <li><strong>Abuse & Harassment:</strong> Verbal abuse, threats, or harassment of drivers, staff, or other users.</li>
+        <li><strong>Damage:</strong> Intentional damage to vehicles or property.</li>
+        <li><strong>Illegal Activities:</strong> Using the service for any illegal purpose, including carrying contraband, illegal substances, or prohibited goods.</li>
+        <li><strong>Intoxication:</strong> Excessive intoxication that may cause discomfort or safety concerns for the driver.</li>
+        <li><strong>Non-Payment:</strong> Refusal to pay for services rendered without a valid dispute.</li>
+        <li><strong>Fake Bookings:</strong> Creating fraudulent bookings or misuse of promotional codes.</li>
+        <li><strong>Spam & Interference:</strong> Automated queries, scraping, or any activity that disrupts our platform.</li>
+      </ul>
+      <div class="alert-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <p><strong>Violation:</strong> Any violation of these conduct rules may result in account suspension, service denial, legal action, and/or referral to law enforcement authorities. Safar Go reserves the right to refuse service to anyone at its sole discretion.</p>
+      </div>
+    </div>
+
+    <!-- 8. Driver Terms -->
+    <div class="term-block reveal" id="driver-terms">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>Driver Partner Terms</h2>
+      <p>If you are a driver-partner using the Safar Go driver app, the following additional terms apply:</p>
+
+      <h3>Eligibility</h3>
+      <ul>
+        <li>Must hold a valid driving license for the vehicle category you operate.</li>
+        <li>Must be at least 21 years of age with at least 2 years of driving experience.</li>
+        <li>Must have a valid Indian PAN card and Aadhaar card.</li>
+        <li>Vehicle must have valid registration, insurance, and pollution certificate.</li>
+        <li>Must clear our background verification and vehicle inspection process.</li>
+      </ul>
+
+      <h3>Driver Obligations</h3>
+      <ul>
+        <li>Arrive at the pickup location at least 15 minutes before the scheduled time.</li>
+        <li>Maintain a clean, well-maintained vehicle that matches the description on the app.</li>
+        <li>Follow all traffic rules and regulations at all times.</li>
+        <li>Treat all passengers with respect and courtesy.</li>
+        <li>Not consume alcohol or any intoxicating substances before or during trips.</li>
+        <li>Provide the exact route as shown in the app, unless the customer requests otherwise.</li>
+        <li>Report any accidents, emergencies, or issues immediately via the app or support line.</li>
+      </ul>
+
+      <h3>Earnings & Payouts</h3>
+      <p>Drivers earn based on completed trips. Payouts are processed weekly (every Monday) to your registered bank account. Detailed earnings statements are available in the driver app at any time.</p>
+    </div>
+
+    <!-- 9. Limitation of Liability -->
+    <div class="term-block reveal" id="liability">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>Limitation of Liability</h2>
+      <p>Safar Go acts solely as a booking platform connecting customers with independent driver-partners. To the maximum extent permitted by law:</p>
+      <ul>
+        <li>Safar Go shall not be liable for any acts, omissions, negligence, or defaults of driver-partners or third-party service providers.</li>
+        <li>We are not liable for any personal injury, property damage, or loss arising from the use of our services.</li>
+        <li>Our total liability for any claim arising from these Terms shall not exceed the fare amount paid for the specific trip in question.</li>
+        <li>We are not responsible for delays caused by traffic, weather, road conditions, or circumstances beyond our control.</li>
+        <li>We are not liable for any indirect, incidental, special, consequential, or punitive damages.</li>
+      </ul>
+      <p>Nothing in these Terms excludes or limits our liability for death or personal injury caused by our negligence, fraud, or any other liability that cannot be limited by law.</p>
+    </div>
+
+    <!-- 10. IP -->
+    <div class="term-block reveal" id="intellectual">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>Intellectual Property</h2>
+      <p>All content, features, and functionality of the Safar Go platform — including but not limited to the app, website, logo, trademarks, designs, text, graphics, software code, and all other intellectual property — are owned by Safar Go and protected by Indian and international copyright, trademark, and other intellectual property laws.</p>
+      <p>You may not:</p>
+      <ul>
+        <li>Copy, modify, distribute, or create derivative works from our platform content.</li>
+        <li>Use our logo or branding without explicit written permission.</li>
+        <li>Reverse engineer, decompile, or disassemble any part of our application.</li>
+        <li>Remove or alter any copyright or proprietary notices.</li>
+      </ul>
+      <p>All trademarks, service marks, and trade names are the property of their respective owners.</p>
+    </div>
+
+    <!-- 11. Modifications -->
+    <div class="term-block reveal" id="modifications">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>Modifications to Terms</h2>
+      <p>We may update these Terms from time to time to reflect changes in our business, technology, or legal requirements. When we make material changes:</p>
+      <ul>
+        <li>We will notify you via in-app notification at least 30 days before the changes take effect.</li>
+        <li>The "Last Updated" date at the top of this page will be revised.</li>
+        <li>Your continued use of the service after any changes constitutes acceptance of the updated Terms.</li>
+      </ul>
+      <p>We encourage you to review these Terms periodically. If you do not agree to any changes, you may close your account before the changes take effect.</p>
+    </div>
+
+    <!-- 12. Governing Law -->
+    <div class="term-block reveal" id="governing">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>Governing Law & Jurisdiction</h2>
+      <p>These Terms shall be governed by and construed in accordance with the laws of India, specifically the laws of the State of Uttar Pradesh.</p>
+      <p>Any disputes arising out of or relating to these Terms or your use of Safar Go services shall be subject to the exclusive jurisdiction of the courts in <strong style="color:var(--gold)">Lucknow, Uttar Pradesh, India</strong>.</p>
+      <p>Before initiating any legal action, you agree to attempt to resolve any dispute informally by contacting our support team. If the dispute cannot be resolved within 30 days, either party may proceed with formal legal proceedings.</p>
+    </div>
+
+    <!-- 13. Contact -->
+    <div class="term-block reveal" id="contact">
+      <h2><span class="icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>Contact Us</h2>
+      <p>If you have any questions about these Terms of Service, please reach out to us:</p>
+      <div class="info-card" style="margin-top:16px;">
+        <h4>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Email
+        </h4>
+        <p style="margin-bottom:0;">legal@safargo.com</p>
+      </div>
+      <div class="info-card" style="margin-top:12px;">
+        <h4>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          Phone
+        </h4>
+        <p style="margin-bottom:0;">+91 98765 43210</p>
+      </div>
+      <div class="info-card" style="margin-top:12px;">
+        <h4>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Address
+        </h4>
+        <p style="margin-bottom:0;">Safar Go, Lucknow, Uttar Pradesh, India — 226001</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CTA -->
+  <section class="section-cta">
+    <div class="section-cta-inner reveal">
+      <h2>Ready to <em>Travel?</em></h2>
+      <p>Accept our terms and start booking your premium outstation journeys today. Your next adventure is just a few taps away.</p>
+      <a href="index.html#download" class="btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Book Your Ride
+      </a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="index.html" class="nav-logo">
+            <span class="nav-logo-text">Safar Go</span>
+          </a>
+          <p>Lucknow's premier outstation taxi service. Verified drivers, luxury fleet, and 24/7 availability for your most important journeys.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <ul>
+            <li><a href="about.html">About Us</a></li>
+            <li><a href="index.html#routes">Destinations</a></li>
+            <li><a href="index.html#driver">Drive with Us</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Support</h4>
+          <ul>
+            <li><a href="index.html#how-it-works">How It Works</a></li>
+            <li><a href="index.html#features">Features</a></li>
+            <li><a href="tel:+919876543210">Call Us</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="privacy.html">Privacy Policy</a></li>
+            <li><a href="terms.html">Terms of Service</a></li>
+            <li><a href="index.html#download">Download App</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Safar Go. All rights reserved. Made with ❤️ in Lucknow, India.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    function toggleMobile() {
+      document.getElementById('mobileMenu').classList.toggle('open');
+      document.body.style.overflow = document.getElementById('mobileMenu').classList.contains('open') ? 'hidden' : '';
+    }
+    document.querySelectorAll('.toc-list a').forEach(link => {
+      link.addEventListener('click', function(e) {
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.05 });
+    reveals.forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
