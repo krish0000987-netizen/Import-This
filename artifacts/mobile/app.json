@@ -19,7 +19,7 @@
     },
     "android": {
       "package": "com.safargo",
-      "versionCode": 7,
+      "versionCode": 8,
       "adaptiveIcon": {
         "backgroundColor": "#0A0A0A",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
