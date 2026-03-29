@@ -28,7 +28,7 @@ import { isStateSupported } from "@/constants/supportedLocations";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
-  : "http://localhost:5000";
+  : "http://localhost:5001";
 
 async function fetchStateFromCoords(lat: number, lng: number): Promise<string | undefined> {
   try {

@@ -17,7 +17,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
-  : "http://localhost:5000";
+  : "http://localhost:5001";
 
 type RideStatus = "all" | "searching" | "assigned" | "started" | "completed" | "cancelled" | "no_driver";
 

@@ -38,7 +38,7 @@ import {
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
-  : "http://localhost:5000";
+  : "http://localhost:5001";
 
 type TripStatus = "assigned" | "arrived" | "otp_verify" | "started" | "awaiting_payment" | "completed";
 

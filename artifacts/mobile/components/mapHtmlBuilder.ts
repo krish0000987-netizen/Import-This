@@ -545,6 +545,8 @@ var SHOW_USER=${showUser ? "true" : "false"};
 var INIT_MARKERS=${markersJson};
 var OLA_API_KEY='${olaApiKey}';
 
+console.log('[Map] Init with API_BASE:', API_BASE);
+
 /* ── Ride type definitions ── */
 var RIDE_TYPES=[
   {id:'mini',  name:'Mini',  icon:'🚗', baseFare:30, rateUnder:14, rateOver:11, etaOffset:0,  capacity:4},
@@ -570,7 +572,7 @@ var routeDistKm=0,routeDurMin=0;
 var driverEtaRemaining=0;
 var carAnimPath=[],carAnimStep=0,carAnimTimer=null;
 var olaToken=null;
-var olaApiKey=null;
+var olaApiKeyFetched=null;
 
 /* ── Helpers ── */
 function haversine(a,b,c,d){var R=6371,dL=(c-a)*Math.PI/180,dN=(d-b)*Math.PI/180;var x=Math.sin(dL/2)*Math.sin(dL/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dN/2)*Math.sin(dN/2);return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));}
@@ -590,7 +592,7 @@ function calcFare(km, rideId, surge){
   return surge?Math.round(f*SURGE_MULT):f;
 }
 
-/* ── OSM fallback style ── */
+/* ── OSM fallback style (used if backend is unreachable) ── */
 var OSM_STYLE={
   version:8,
   sources:{
@@ -603,7 +605,9 @@ var OSM_STYLE={
   },
   layers:[{id:'osm-layer',type:'raster',source:'osm-tiles',minzoom:0,maxzoom:19}]
 };
-var OLA_STYLE_URL=API_BASE ? API_BASE+'${mapStylePath}' : null;
+/* Always prefer the backend style proxy — it handles auth server-side.
+   Even if API_BASE is empty, the WebView can still use relative URLs ('/api/...') */
+var OLA_STYLE_URL=(API_BASE||'')+'${mapStylePath}';
 var map=null;
 
 /* ── User dot ── */
@@ -614,25 +618,41 @@ function placeUserDot(lng,lat){
   userMarker=new maplibregl.Marker({element:el,anchor:'center'}).setLngLat([lng,lat]).addTo(map);
 }
 
-/* ── Init map — style served via backend proxy (api_key injected server-side) ── */
-function initMap(){
-  var INIT_STYLE=OLA_STYLE_URL||OSM_STYLE;
+/* ── Init map — fetch OAuth token first, then init with Ola Maps style via backend proxy ── */
+function buildMap(token,apiKey){
+  olaToken=token;olaApiKeyFetched=apiKey||OLA_API_KEY||null;
+  /* Use backend proxy style URL — auth is injected server-side for the style JSON.
+     The transformRequest below handles auth for individual tile/sprite/glyph requests. */
   map=new maplibregl.Map({
     container:'map',
-    style:INIT_STYLE,
+    style:OLA_STYLE_URL,
     center:[INIT_LNG,INIT_LAT],
     zoom:INIT_ZOOM,
     attributionControl:false,
-    transformRequest:function(url){
-      if(url.indexOf('api.olamaps.io')>=0&&OLA_API_KEY&&url.indexOf('api_key=')<0){
-        var sep=url.indexOf('?')>=0?'&':'?';
-        return{url:url+sep+'api_key='+OLA_API_KEY};
+    transformRequest:function(url,resourceType){
+      if(url.indexOf('api.olamaps.io')>=0){
+        /* Inject api_key if not already present — needed for tile/sprites/glyphs
+           because MapLibre GL sends tile requests without Authorization headers */
+        if(olaApiKeyFetched&&url.indexOf('api_key=')<0){
+          var sep=url.indexOf('?')>=0?'&':'?';
+          return{url:url+sep+'api_key='+olaApiKeyFetched};
+        }
+        if(olaToken&&url.indexOf('api_key=')<0){
+          var sep2=url.indexOf('?')>=0?'&':'?';
+          return{url:url+sep2+'access_token='+olaToken};
+        }
       }
       return{url:url};
     }
   });
   map.addControl(new maplibregl.AttributionControl({compact:true}),'bottom-right');
   map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
+
+  map.once('error',function(e){
+    /* If Ola Maps style fails (bad creds / network), fall back to OSM */
+    console.warn('[Map] Style load error, falling back to OSM:',e&&e.error&&e.error.message);
+    map.setStyle(OSM_STYLE);
+  });
 
   map.once('load',function(){
     if(SHOW_USER){
@@ -664,6 +684,20 @@ function initMap(){
       if(name)selectSugg({name:name,lat:lat,lng:lng,type:'address',sub:'',dist:0},activeField);
     });
   });
+}
+
+function initMap(){
+  /* Fetch OAuth token from backend first, then initialise the map.
+     If the token request fails, proceed anyway (OSM style will be used as fallback). */
+  if(API_BASE){
+    fetch(API_BASE+'/api/ola/token')
+      .then(function(r){return r.json();})
+      .then(function(d){buildMap(d.token||null,d.apiKey||null);})
+      .catch(function(){buildMap(null,null);});
+  } else {
+    /* No API_BASE — still attempt the map with whatever env-level API key exists */
+    buildMap(null,OLA_API_KEY||null);
+  }
 }
 
 /* ── Driver markers ── */
@@ -782,6 +816,7 @@ function geocode(query,bLat,bLng,cb){
     fetch(API_BASE+'/api/ola/search?'+params)
       .then(function(r){return r.json();})
       .then(function(d){
+        console.log('[Map] Search results:', d);
         var preds=d.predictions||[];
         var results=preds.map(function(p){
           var lat=p.geometry&&p.geometry.location?p.geometry.location.lat:null;
@@ -795,7 +830,10 @@ function geocode(query,bLat,bLng,cb){
         geocodeCache[cacheKey]=results;
         cb(results);
       })
-      .catch(function(){cb([]);});
+      .catch(function(err){
+        console.error('[Map] Search error:', err);
+        cb([]);
+      });
   },300);
 }
 
@@ -1046,12 +1084,7 @@ function saveRecent(s){
   else if(window._setPendingSaved==='work'){savedWork={name:s.name,lat:s.lat,lng:s.lng,sub:s.sub||''};window._setPendingSaved=null;}
 }
 
-function selectSugg(s,field){
-  hideDropdown();
-  if(!s.lat||!s.lng){
-    /* Coords missing — skip invalid suggestion */
-    return;
-  }
+function applySelectedSugg(s,field){
   saveRecent(s);
   if(field==='pickup'){
     pickupText=s.name;pickupCoords={lat:s.lat,lng:s.lng};
@@ -1070,6 +1103,29 @@ function selectSugg(s,field){
   activeField=null;
   if(pickupCoords&&destCoords)drawRoute(pickupCoords.lat,pickupCoords.lng,destCoords.lat,destCoords.lng);
   postToParent({type:field==='pickup'?'PICKUP_SELECTED':'DEST_SELECTED',name:s.name,lat:s.lat,lng:s.lng});
+}
+
+function selectSugg(s,field){
+  hideDropdown();
+  if(s.lat&&s.lng){
+    applySelectedSugg(s,field);
+    return;
+  }
+  /* Coordinates missing — resolve via place-details API */
+  if(s.placeId&&API_BASE){
+    loading(true);
+    fetch(API_BASE+'/api/ola/place-details?place_id='+encodeURIComponent(s.placeId))
+      .then(function(r){return r.json();})
+      .then(function(d){
+        loading(false);
+        var loc=d.result&&d.result.geometry&&d.result.geometry.location;
+        if(loc&&loc.lat&&loc.lng){
+          applySelectedSugg(Object.assign({},s,{lat:loc.lat,lng:loc.lng}),field);
+        }
+      })
+      .catch(function(){loading(false);});
+  }
+  /* else: no placeId and no coords — silently skip */
 }
 
 function useCurrLoc(){
@@ -1179,10 +1235,13 @@ document.getElementById('locate-btn').addEventListener('click',function(){
     postToParent({type:'REQUEST_LOCATION'});
   } else {
     navigator.geolocation&&navigator.geolocation.getCurrentPosition(function(pos){
+      console.log('[Map] Got user position:', pos.coords);
       userPos={lat:pos.coords.latitude,lng:pos.coords.longitude};
       placeUserDot(userPos.lng,userPos.lat);
       map.flyTo({center:[userPos.lng,userPos.lat],zoom:14,duration:800});
-    },null,{timeout:8000,enableHighAccuracy:false});
+    },function(err){
+      console.error('[Map] Geolocation error:', err);
+    },{timeout:8000,enableHighAccuracy:false});
   }
 });
 

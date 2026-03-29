@@ -2,7 +2,7 @@ import { io, Socket } from "socket.io-client";
 
 const SOCKET_URL = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
-  : "http://localhost:5000";
+  : "http://localhost:5001";
 
 let socket: Socket | null = null;
 

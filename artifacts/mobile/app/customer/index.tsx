@@ -77,7 +77,7 @@ function DestinationCard({ item }: { item: DestinationItem }) {
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
-  : "http://localhost:5000";
+  : "http://localhost:5001";
 
 interface OlaPlace {
   id: string;

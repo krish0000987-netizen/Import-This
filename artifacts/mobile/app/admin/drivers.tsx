@@ -22,7 +22,7 @@ import { DriverData } from "@/constants/data";
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
-  : "http://localhost:5000";
+  : "http://localhost:5001";
 
 const kycColors: Record<string, string> = {
   approved: "#2ECC71",

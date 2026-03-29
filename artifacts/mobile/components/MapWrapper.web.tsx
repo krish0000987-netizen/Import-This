@@ -6,8 +6,8 @@ const GOLD = "#C5A55A";
 
 function getApiBase(): string {
   const domain = process.env.EXPO_PUBLIC_DOMAIN;
-  if (domain) return `https://${domain}`;
-  return "http://localhost:5000";
+  if (domain) return domain.startsWith("http") ? domain : `https://${domain}`;
+  return "http://localhost:5001";
 }
 
 function getOlaApiKey(): string {

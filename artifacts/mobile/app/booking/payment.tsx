@@ -24,7 +24,7 @@ import { connectSocket, emitCustomerPaymentDone, emitJoinRideRoom } from "@/serv
 
 const API_BASE = process.env.EXPO_PUBLIC_DOMAIN
   ? `https://${process.env.EXPO_PUBLIC_DOMAIN}`
-  : "http://localhost:5000";
+  : "http://localhost:5001";
 
 type PaymentState = "idle" | "creating_order" | "webview" | "verifying" | "success" | "failed" | "cancelled";
 
